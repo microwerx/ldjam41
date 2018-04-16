@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css?family=IBM+Plex+Mono:600|IBM+Plex+Sans|IBM+Plex+Sans+Condensed|IBM+Plex+Serif:400,600');
+@font-face {
+    font-family: 'EssentialPragmataPro';
+    src: url('webfonts/361E91_0_0.eot');
+    src: url('webfonts/361E91_0_0.eot?#iefix') format('embedded-opentype'), url('webfonts/361E91_0_0.woff2') format('woff2'), url('webfonts/361E91_0_0.woff') format('woff'), url('webfonts/361E91_0_0.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'BrodyCom';
+    src: url('webfonts/361E91_1_0.eot');
+    src: url('webfonts/361E91_1_0.eot?#iefix') format('embedded-opentype'), url('webfonts/361E91_1_0.woff2') format('woff2'), url('webfonts/361E91_1_0.woff') format('woff'), url('webfonts/361E91_1_0.ttf') format('truetype');
+}
+
+html,
+body {
+    display: block;
+    width: 800px;
+    margin: auto;
+}
+
+html {
+    background: #B5BAB6;
+}
+
+body {
+    background: white;
+    font-family: 'IBM Plex Sans Condensed', 'Helvetica Neue', 'Segoe UI', sans;
+    line-height: 1em;
+    padding: 2%;
+}
+
+h1,
+h2,
+h3 {
+    line-height: 1.0em;
+    margin: 0px;
+}
+
+h1 {
+    font-family: 'BrodyCom', 'Helvetica Neue', 'Segoe UI', sans;
+    color: #B565A7;
+    /* Storm Gray */
+    font-style: italic;
+    font-size: 2.5em;
+}
+
+h2 {
+    font-family: 'BrodyCom', 'Helvetica Neue', 'Segoe UI', sans;
+    color: #009874;
+    font-size: 2em;
+}
+
+h3 {
+    font-family: 'EssentialPragmataPro', consolas, fixed;
+    font-weight: normal;
+    font-size: 1.0em;
+}
+
+p {
+    font-family: 'EssentialPragmataPro', consolas, fixed;
+    margin: none;
+    padding: none;
+}
