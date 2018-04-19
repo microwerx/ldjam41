@@ -1,14 +1,13 @@
-@import url('https://fonts.googleapis.com/css?family=IBM+Plex+Mono:600|IBM+Plex+Sans|IBM+Plex+Sans+Condensed|IBM+Plex+Serif:400,600');
 @font-face {
     font-family: 'EssentialPragmataPro';
-    src: url('webfonts/361E91_0_0.eot');
-    src: url('webfonts/361E91_0_0.eot?#iefix') format('embedded-opentype'), url('webfonts/361E91_0_0.woff2') format('woff2'), url('webfonts/361E91_0_0.woff') format('woff'), url('webfonts/361E91_0_0.ttf') format('truetype');
+    src: url('assets/webfonts/361E91_0_0.eot');
+    src: url('assets/webfonts/361E91_0_0.eot?#iefix') format('embedded-opentype'), url('assets/webfonts/361E91_0_0.woff2') format('woff2'), url('assets/webfonts/361E91_0_0.woff') format('woff'), url('assets/webfonts/361E91_0_0.ttf') format('truetype');
 }
 
 @font-face {
-    font-family: 'BrodyCom';
-    src: url('webfonts/361E91_1_0.eot');
-    src: url('webfonts/361E91_1_0.eot?#iefix') format('embedded-opentype'), url('webfonts/361E91_1_0.woff2') format('woff2'), url('webfonts/361E91_1_0.woff') format('woff'), url('webfonts/361E91_1_0.ttf') format('truetype');
+    font-family: 'Salsbury';
+    src: url('assets/webfonts/3650A8_0_0.eot');
+    src: url('assets/webfonts/3650A8_0_0.eot?#iefix') format('embedded-opentype'), url('assets/webfonts/3650A8_0_0.woff2') format('woff2'), url('assets/webfonts/3650A8_0_0.woff') format('woff'), url('assets/webfonts/3650A8_0_0.ttf') format('truetype');
 }
 
 html,
@@ -24,7 +23,7 @@ html {
 
 body {
     background: white;
-    font-family: 'IBM Plex Sans Condensed', 'Helvetica Neue', 'Segoe UI', sans;
+    font-family: 'Salsbury', 'Helvetica Neue', 'Segoe UI', sans;
     line-height: 1em;
     padding: 2%;
 }
@@ -36,18 +35,42 @@ h3 {
     margin: 0px;
 }
 
+@keyframes neon_magenta {
+    from { -webkit-text-stroke-color: #bf00bf; }
+    to {-webkit-text-stroke-color: #ff00ff; }
+}
+
+@keyframes neon_cyan {
+    from { -webkit-text-stroke-color: #00bfbf; }
+    to { -webkit-text-stroke-color: #00ffff; }
+}
 h1 {
-    font-family: 'BrodyCom', 'Helvetica Neue', 'Segoe UI', sans;
-    color: #B565A7;
+    font-family: 'Salsbury', 'Helvetica Neue', 'Segoe UI', sans;
+    color: #bf00bf;
     /* Storm Gray */
-    font-style: italic;
+    /* font-style: italic; */
     font-size: 2.5em;
+    text-shadow: #3f003f 2px 2px;
+    -webkit-text-stroke-width: 1px;
+   -webkit-text-stroke-color: #ff00ff;
+   animation-name: neon_magenta;
+   animation-duration: 2.62s;
+   animation-direction: alternate;
+   animation-iteration-count: infinite;
 }
 
 h2 {
-    font-family: 'BrodyCom', 'Helvetica Neue', 'Segoe UI', sans;
-    color: #009874;
+    font-family: 'Salsbury', 'Helvetica Neue', 'Segoe UI', sans;
+    /* font-style: italic; */
     font-size: 2em;
+    color: #00bfbf;
+    text-shadow: #003f3f 2px 2px;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #00ffff;
+    animation-name: neon_cyan;
+    animation-duration: 3.14159s;
+    animation-direction: alternate;
+    animation-iteration-count: infinite;
 }
 
 h3 {

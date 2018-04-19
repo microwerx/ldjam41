@@ -30,13 +30,37 @@
 /// <reference path="./Matrix4.ts" />
 
 namespace GTE {
+    export function oscillate(t: number, frequency: number, phase: number, amplitude: number, offset: number) {
+        return Math.sin(frequency * t + phase) * amplitude + offset;
+    }
+
+    export function oscillateBetween(t: number, frequency: number, phase: number, lowerLimit: number, upperLimit: number) {
+        return Math.sin(frequency * t + phase) * (upperLimit - lowerLimit) * 0.5 + lowerLimit;
+    }
+
     export function clamp(x: number, a: number, b: number) {
         return x < a ? a : x > b ? b : x;
     }
 
-    // 0 <= mix <= 1
-    export function lerp(a: number, b: number, mix: number) {
-        return mix * a + (1 - mix) * b;
+    // 0 <= x <= 1, returns a blend of a and b
+    export function lerp(a: number, b: number, x: number) {
+        return (1 - x) * a + x * b;
+    }
+
+    // 0 <= x <= 1, returns a blend of a and b
+    export function smoothstep(a: number, b: number, x: number) {
+        if (x < 0) return a;
+        if (x > 1) return b;
+        let mix = x * x * (3 - 2 * x);
+        return lerp(a, b, mix);
+    }
+
+    // 0 <= x <= 1, returns a blend of a and b
+    export function smootherstep(a: number, b: number, x: number) {
+        if (x < 0) return a;
+        if (x > 1) return b;
+        let mix = x * x * x * (x * (x * 6 - 15) + 10);
+        return lerp(a, b, mix);
     }
 
     export function distancePointLine2(point: Vector2, linePoint1: Vector2, linePoint2: Vector2): number {
@@ -60,5 +84,4 @@ namespace GTE {
     export function max3(a: number, b: number, c: number): number {
         return Math.max(Math.max(a, b), c);
     }
-
 }
