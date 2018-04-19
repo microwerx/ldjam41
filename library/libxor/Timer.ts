@@ -1,4 +1,4 @@
-class TimerComponent {
+export class TimerComponent {
     dt: number = 0;
     t0: number = 0;
     t1: number = 0;

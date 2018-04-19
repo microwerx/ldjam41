@@ -1115,47 +1115,6 @@ var GTE;
     }
     GTE.max3 = max3;
 })(GTE || (GTE = {}));
-var Brainfish;
-(function (Brainfish) {
-    class Perceptron1Output {
-        constructor(inputCount) {
-            this.I = [];
-            this.w = [];
-            this.O = 0;
-            this.t = 0;
-            this.w.length = inputCount;
-            this.I.length = inputCount;
-        }
-        compute() {
-            this.O = 0.0;
-            for (let i = 0; i < this.w.length; i++) {
-                this.O += this.I[i] * this.w[i];
-            }
-            return this.O > this.t ? 1 : 0;
-        }
-    }
-    Brainfish.Perceptron1Output = Perceptron1Output;
-    function CreatePerceptron1(count) {
-        return new Perceptron1Output(count);
-    }
-    Brainfish.CreatePerceptron1 = CreatePerceptron1;
-    function CreateLogicPerceptron(w1, w2, t) {
-        let p = CreatePerceptron1(2);
-        p.w[0] = w1;
-        p.w[1] = w2;
-        p.t = t;
-        return p;
-    }
-    Brainfish.CreateLogicPerceptron = CreateLogicPerceptron;
-    function CreateANDPerceptron() {
-        return CreateLogicPerceptron(1, 1, 2);
-    }
-    Brainfish.CreateANDPerceptron = CreateANDPerceptron;
-    function CreateORPerceptron() {
-        return CreateLogicPerceptron(1, 1, 1);
-    }
-    Brainfish.CreateORPerceptron = CreateORPerceptron;
-})(Brainfish || (Brainfish = {}));
 const KEY_BUTTON0 = 0;
 const KEY_BUTTON1 = 1;
 const KEY_BUTTON2 = 2;
@@ -1238,79 +1197,45 @@ class InputComponent {
             e.preventDefault();
     }
 }
-class TimerComponent {
-    constructor() {
-        this.dt = 0;
-        this.t0 = 0;
-        this.t1 = 0;
-        this.timers = new Map();
-    }
-    update(tInSeconds) {
-        this.t0 = this.t1;
-        this.t1 = tInSeconds;
-        this.dt = this.t1 - this.t0;
-    }
-    start(name, length) {
-        this.timers.set(name, this.t1 + length);
-    }
-    ended(name) {
-        let timer = this.timers.get(name);
-        if (!timer)
-            return true;
-        if (this.t1 >= timer) {
-            return true;
+var Brainfish;
+(function (Brainfish) {
+    class Perceptron1Output {
+        constructor(inputCount) {
+            this.I = [];
+            this.w = [];
+            this.O = 0;
+            this.t = 0;
+            this.w.length = inputCount;
+            this.I.length = inputCount;
         }
-        return false;
-    }
-    timeleft(name) {
-        let timer = this.timers.get(name);
-        if (!timer)
-            return 0;
-        if (this.t1 < timer) {
-            return timer - this.t1;
+        compute() {
+            this.O = 0.0;
+            for (let i = 0; i < this.w.length; i++) {
+                this.O += this.I[i] * this.w[i];
+            }
+            return this.O > this.t ? 1 : 0;
         }
-        return 0;
     }
-}
-class Sprite {
-    constructor(index) {
-        this.index = 0;
-        this.x = 0;
-        this.y = 0;
-        this.enabled = false;
-        this.alive = 1;
-        this.active = false;
-        this.index = index | 0;
-        this.position = Vector2.make(0, 0);
-        this.offset = Vector2.make(0, 0);
-        this.velocity = Vector2.make(0, 0);
-        this.random = Math.random();
-        this.timealive = 0.0;
-        this.enabled = true;
-        this.alive = 1;
-        this.active = true;
+    Brainfish.Perceptron1Output = Perceptron1Output;
+    function CreatePerceptron1(count) {
+        return new Perceptron1Output(count);
     }
-    reset(x, y) {
-        this.position.x = x;
-        this.position.y = y;
-        this.offset.x = 0;
-        this.offset.y = 0;
-        this.velocity.x = 0;
-        this.velocity.y = 0;
+    Brainfish.CreatePerceptron1 = CreatePerceptron1;
+    function CreateLogicPerceptron(w1, w2, t) {
+        let p = CreatePerceptron1(2);
+        p.w[0] = w1;
+        p.w[1] = w2;
+        p.t = t;
+        return p;
     }
-    update(dt) {
-        this.offset.x += this.velocity.x * dt;
-        this.offset.y += this.velocity.y * dt;
+    Brainfish.CreateLogicPerceptron = CreateLogicPerceptron;
+    function CreateANDPerceptron() {
+        return CreateLogicPerceptron(1, 1, 2);
     }
-    static Distance(sprite1, sprite2) {
-        if (!sprite1 || !sprite2)
-            return 1e6;
-        let dx = (sprite1.x + sprite1.offset.x) - (sprite2.x + sprite2.offset.x);
-        let dy = (sprite1.y + sprite1.offset.y) - (sprite2.y + sprite2.offset.y);
-        return Math.sqrt(dx * dx + dy * dy);
+    Brainfish.CreateANDPerceptron = CreateANDPerceptron;
+    function CreateORPerceptron() {
+        return CreateLogicPerceptron(1, 1, 1);
     }
-    static Collide(sprite1, sprite2, d) {
-        return Sprite.Distance(sprite1, sprite2) < d ? true : false;
-    }
-}
+    Brainfish.CreateORPerceptron = CreateORPerceptron;
+})(Brainfish || (Brainfish = {}));
 //# sourceMappingURL=game.js.map

@@ -1,4 +1,6 @@
-class Sprite {
+/// <reference path="../gte/GTE.ts" />
+
+export class Sprite {
     index: number = 0;
     x: number = 0;
     y: number = 0;

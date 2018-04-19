@@ -1,6 +1,6 @@
 /// <reference path="gte/GTE.ts" />
-/// <reference path="LibXOR.ts" />
-/// <reference path="State.ts" />
+/// <reference path="libxor/LibXOR.ts" />
+/// <reference path="libxor/State.ts" />
 
 export class Game {
     XOR: LibXOR;

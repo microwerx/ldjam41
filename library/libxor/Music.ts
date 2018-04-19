@@ -1,4 +1,4 @@
-/// <reference path="gte/GTE.ts" />
+/// <reference path="../gte/GTE.ts" />
 
 export class MusicComponent {
     musicElements: HTMLAudioElement[];
