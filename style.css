@@ -36,14 +36,23 @@ h3 {
 }
 
 @keyframes neon_magenta {
-    from { -webkit-text-stroke-color: #bf00bf; }
-    to {-webkit-text-stroke-color: #ff00ff; }
+    from {
+        -webkit-text-stroke-color: #bf00bf;
+    }
+    to {
+        -webkit-text-stroke-color: #ff00ff;
+    }
 }
 
 @keyframes neon_cyan {
-    from { -webkit-text-stroke-color: #00bfbf; }
-    to { -webkit-text-stroke-color: #00ffff; }
+    from {
+        -webkit-text-stroke-color: #00bfbf;
+    }
+    to {
+        -webkit-text-stroke-color: #00ffff;
+    }
 }
+
 h1 {
     font-family: 'Salsbury', 'Helvetica Neue', 'Segoe UI', sans;
     color: #bf00bf;
@@ -52,11 +61,11 @@ h1 {
     font-size: 2.5em;
     text-shadow: #3f003f 2px 2px;
     -webkit-text-stroke-width: 1px;
-   -webkit-text-stroke-color: #ff00ff;
-   animation-name: neon_magenta;
-   animation-duration: 2.62s;
-   animation-direction: alternate;
-   animation-iteration-count: infinite;
+    -webkit-text-stroke-color: #ff00ff;
+    animation-name: neon_magenta;
+    animation-duration: 2.62s;
+    animation-direction: alternate;
+    animation-iteration-count: infinite;
 }
 
 h2 {
@@ -83,4 +92,24 @@ p {
     font-family: 'EssentialPragmataPro', consolas, fixed;
     margin: none;
     padding: none;
+}
+
+canvas {
+    border-radius: 4px;
+}
+
+.mycontrols {
+    font-family: 'EssentialPragmataPro', consolas, fixed;
+    background: #bfbfbf;
+    color: #000000;
+    text-decoration: none;
+    display: inline-block;
+    border: none;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+.mycontrols:hover {
+    background: #00ffff;
+    box-shadow: #00bfbf;
 }

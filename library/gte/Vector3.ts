@@ -1,4 +1,4 @@
-// Fluxions WebGL Library
+// Fluxions Geometry Transformation Engine WebGL Library
 // Copyright (c) 2017 - 2018 Jonathan Metzgar
 // All Rights Reserved.
 //
@@ -99,6 +99,13 @@ class Vector3 {
 
     static makeUnit(x: number, y: number, z: number): Vector3 {
         return (new Vector3(x, y, z)).norm();
+    }
+
+    static distance(a: Vector3, b: Vector3): number {
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
+        let dz = a.z - b.z;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     add(v: Vector3): Vector3 {

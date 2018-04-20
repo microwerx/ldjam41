@@ -1,8 +1,8 @@
-/// <reference path="gte/GTE.ts" />
-/// <reference path="libxor/LibXOR.ts" />
-/// <reference path="libxor/State.ts" />
+/// <reference path="./gte/GTE.ts" />
+/// <reference path="./libxor/LibXOR.ts" />
+/// <reference path="./libxor/State.ts" />
 
-export class Game {
+class Game {
     XOR: LibXOR;
 
     series: string = "#LDJAM 41";
@@ -16,7 +16,7 @@ export class Game {
     states: StateMachine = new StateMachine();
 
     constructor() {
-        this.XOR = new LibXOR();
+        this.XOR = new LibXOR(640, 512, true);
         this.gameover = true;
         this.gamelevel = 1;
         this.score = 0;
@@ -31,6 +31,13 @@ export class Game {
         if (e = document.getElementById("headerAuthor")) {
             e.innerHTML = this.author;
         }
+        this.XOR.Graphics.hide();
+        if (this.XOR.Fluxions) this.XOR.Fluxions.hide();
+    }
+
+
+    focus() {
+        this.XOR.Graphics.focus();
     }
 
 
@@ -62,6 +69,14 @@ export class Game {
         XOR.Sounds.queueSound('kickaccent', 'assets/sounds/E12KICKACCENT.wav');
         XOR.Sounds.queueSound('rimshot', 'assets/sounds/E12RIMSHOT.wav');
         XOR.Sounds.queueSound('snare', 'assets/sounds/E12SNARE.wav');
+
+        g.resizeTiles(64, 64, 4);
+
+        if (XOR.Scenegraph) {
+            let sg = XOR.Scenegraph;
+            sg.AddRenderConfig("default", "assets/shaders/default.vert", "assets/shaders/default.frag");
+            sg.Load("assets/test.scn");
+        }
 
         this.states.push("MAINMENU", "", 0);
         this.states.push("MAINMENU", "PAUSE", 0.25);
@@ -152,6 +167,20 @@ export class Game {
         this.states.update(tInSeconds);
         XOR.update(tInSeconds);
 
+        if (this.XOR.Scenegraph) {
+            let sg = this.XOR.Scenegraph;
+            let b1 = sg.GetNode("test.scn", "bunny");
+            let b2 = sg.GetNode("test.scn", "bunny2");
+            b2.geometryGroup = "bunny.obj";
+            let dirto = b2.dirto(b1).norm().mul(0.1 * XOR.dt);
+            b2.posttransform.Translate(dirto.x, dirto.y, dirto.z);
+
+            let d = sg.GetNode("test.scn", "dragon");
+            dirto = XOR.Input.gamepadStick1.mul(XOR.dt);
+            d.posttransform.Translate(dirto.x, -dirto.y, dirto.z);
+        }
+
+
         if (this.statePause()) return;
         if (this.stateMainMenu()) return;
         if (this.stateAskToQuit()) return;
@@ -180,10 +209,22 @@ export class Game {
     display() {
         let XOR = this.XOR;
         let g = XOR.Graphics;
-        if (!g.spritesLoaded) {
+        g.setFont("Salsbury,EssentialPragmataPro,consolas,fixed", 32);
+
+
+        let gameLoading = 0;
+        if (XOR.Scenegraph && XOR.Scenegraph.loaded) {
+            if (XOR.Fluxions) XOR.Fluxions.show();
+            gameLoading++;
+        }
+        if (g.spritesLoaded) gameLoading++;
+
+        if (gameLoading != 2) {
+            g.show();
             g.clearScreen('blue');
             g.putTextAligned('Loading', 'white', 0, 0, 0, 0);
         } else {
+            g.hide();
             g.clearScreen('lightblue');
             if (XOR.Input.getkey(KEY_LEFT))
                 g.clearScreen('lightblue');
@@ -193,6 +234,7 @@ export class Game {
             g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
             g.putTextAligned(this.states.topAlt, 'white', 1, -1, 0, 0);
 
+            g.drawTiles();
             g.drawSprites();
 
             if (this.states.topName == "MAINMENU") {
@@ -219,8 +261,70 @@ export class Game {
             }
         }
 
+        if (XOR.Fluxions && XOR.Scenegraph) {
+            let sg = XOR.Scenegraph;
+            let gl = XOR.Fluxions.gl;
+            gl.clearColor(0.2, 0.3 * GTE.oscillate(XOR.t1, 0.5, 0.0, 0.3, 0.0), 0.4, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+            let bunny = sg.GetNode("test.scn", "bunny");
+            bunny.geometryGroup = "bunny.obj";
+            let mouse = XOR.Input.lastClickWebGL;
+            bunny.posttransform = Matrix4.makeTranslation(mouse.x/320-1, -mouse.y/256+1 + GTE.oscillateBetween(XOR.t1, 0.5, 0.0, -0.5, 0.5), 0.0);
+
+            let rc = sg.UseRenderConfig("default");
+            if (rc) {
+                sg.sunlight.setOrbit(45, 45, 10);
+                sg.camera.angleOfView = 45;
+                sg.camera.setLookAt(Vector3.make(0, 0, 5), Vector3.make(0, 0, 0), Vector3.make(0, 1, 0));
+                sg.SetGlobalParameters(rc)
+                sg.RenderScene(rc, "");
+            }
+        }
+    }
+
+    setInstructions() {
+        let EIs: Array<[string, string]> = [
+            ["leftInstructions", ""],
+            ["rightInstructions", ""],
+            ["upInstructions", ""],
+            ["downInstructions", ""],
+            ["enterInstructions", ""],
+            ["escapeInstructions", ""],
+            ["spaceInstructions", ""]
+        ];
+        for (let ei of EIs) {
+            let e = document.getElementById(ei[0]);
+            if (e) {
+                e.innerHTML = ei[1];
+            }
+        }
     }
 }
+
+
+
+function swapZQSD() {
+    let e = document.getElementById('zqsd');
+    if (!e) return;
+    game.XOR.Input.wasdFormat = !game.XOR.Input.wasdFormat;
+    if (game.XOR.Input.wasdFormat) {
+        e.setAttribute("value", "Switch to ZQSD");
+        let uk = document.getElementById('UPKEY');
+        if (uk) uk.innerHTML = 'w';
+        let lk = document.getElementById('LEFTKEY');
+        if (lk) lk.innerHTML = 'a';
+    }
+    else {
+        e.setAttribute("value", "Switch to WASD");
+        let uk = document.getElementById('UPKEY');
+        if (uk) uk.innerHTML = 'z';
+        let lk = document.getElementById('LEFTKEY');
+        if (lk) lk.innerHTML = 'q';
+    }
+    game.focus();
+}
+
 
 
 let game = new Game();

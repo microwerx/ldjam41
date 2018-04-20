@@ -1,4 +1,4 @@
-// Fluxions WebGL Library
+// Fluxions Geometry Transformation Engine WebGL Library
 // Copyright (c) 2017 - 2018 Jonathan Metzgar
 // All Rights Reserved.
 //
@@ -30,11 +30,11 @@
 /// <reference path="./Matrix4.ts" />
 
 namespace GTE {
-    export function oscillate(t: number, frequency: number, phase: number, amplitude: number, offset: number) {
+    export function oscillate(t: number, frequency: number = 1, phase: number = 0, amplitude: number = 1, offset: number = 0) {
         return Math.sin(frequency * t + phase) * amplitude + offset;
     }
 
-    export function oscillateBetween(t: number, frequency: number, phase: number, lowerLimit: number, upperLimit: number) {
+    export function oscillateBetween(t: number, frequency: number = 1, phase: number = 0, lowerLimit: number = 0, upperLimit: number = 1) {
         return Math.sin(frequency * t + phase) * (upperLimit - lowerLimit) * 0.5 + lowerLimit;
     }
 

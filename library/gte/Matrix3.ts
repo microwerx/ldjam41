@@ -1,4 +1,4 @@
-// Fluxions WebGL Library
+// Fluxions Geometry Transformation Engine WebGL Library
 // Copyright (c) 2017 - 2018 Jonathan Metzgar
 // All Rights Reserved.
 //
