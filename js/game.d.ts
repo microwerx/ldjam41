@@ -729,7 +729,7 @@ declare class GraphicsComponent {
     readonly spritesLoaded: boolean;
     readonly fontHeight: number;
     setFont(fontName: string, pixelHeight: number): void;
-    clearScreen(color: string): void;
+    clearScreen(color?: string | null): void;
     loadSprites(url: string): void;
     resize(src: ImageData, dstw: number, dsth: number): ImageData;
     extractSprites(): void;
@@ -759,8 +759,7 @@ declare const KEY_DOWN = 13;
 declare class InputComponent {
     buttons: number;
     wasdFormat: boolean;
-    lastClickWebGL: Vector3;
-    lastClickCanvas: Vector3;
+    lastClick: Vector3;
     gamepadStick1: Vector3;
     gamepadStick2: Vector3;
     gamepadDpad: Vector3;
@@ -811,15 +810,14 @@ declare class TimerComponent {
 declare class LibXOR {
     readonly width: number;
     readonly height: number;
-    readonly hasWebGLContext: boolean;
     Graphics: GraphicsComponent;
     Input: InputComponent;
     Music: MusicComponent;
     Timers: TimerComponent;
     Sounds: Toadfish;
-    Fluxions: RenderingContext | null;
-    Scenegraph: Scenegraph | null;
-    constructor(width?: number, height?: number, hasWebGLContext?: boolean);
+    Fluxions: RenderingContext;
+    Scenegraph: Scenegraph;
+    constructor(width?: number, height?: number);
     update(tInSeconds: number): void;
     readonly dt: number;
     readonly t1: number;
@@ -867,6 +865,9 @@ declare class Game {
     getTimeredKey(key: number, delay?: number): boolean;
     update(tInSeconds: number): void;
     display(): void;
+    draw3d(): void;
+    draw2d(): void;
+    draw2doverlay(): void;
     setInstructions(): void;
 }
 declare function swapZQSD(): void;

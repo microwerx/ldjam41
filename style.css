@@ -113,3 +113,22 @@ canvas {
     background: #00ffff;
     box-shadow: #00bfbf;
 }
+
+#game {
+    position: relative;
+    margin: auto;
+    padding: 0px;
+    width: 640px;
+    height: 512px;
+}
+
+#webgldiv {
+    position: absolute;
+    pointer-events: none;
+    z-index: 8;
+}
+
+#graphicsdiv {
+    position: absolute;
+    z-index: 10;
+}

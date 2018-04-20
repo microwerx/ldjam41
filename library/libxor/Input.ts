@@ -39,8 +39,7 @@ class InputComponent {
     buttons: number;
     wasdFormat: boolean = true;
 
-    lastClickWebGL: Vector3 = Vector3.make(0, 0, 0);
-    lastClickCanvas: Vector3 = Vector3.make(0, 0, 0);
+    lastClick: Vector3 = Vector3.make(0, 0, 0);
 
     gamepadStick1: Vector3 = Vector3.make(0, 0, 0);
     gamepadStick2: Vector3 = Vector3.make(0, 0, 0);
@@ -67,20 +66,11 @@ class InputComponent {
         let e = document.getElementById("graphicscanvas");
         if (e) {
             e.addEventListener("mousedown", (e) => {
-                self.onmousedown(e, this.lastClickCanvas);
+                self.onmousedown(e, this.lastClick);
             });
             e.addEventListener("mouseup", (e) => {
-                self.onmouseup(e, this.lastClickCanvas);
+                self.onmouseup(e, this.lastClick);
             });
-        }
-        e = document.getElementById("webglcanvas");
-        if (e) {
-            e.addEventListener("mouseup", (e) => {
-                self.onmouseup(e, this.lastClickWebGL);
-            })
-            e.addEventListener("mousedown", (e) => {
-                self.onmousedown(e, this.lastClickWebGL);
-            })
         }
 
         window.addEventListener("gamepadconnected", (e) => {
@@ -88,7 +78,7 @@ class InputComponent {
             console.log("Gamepad connected at index %d: %s. %d buttons, %d axes.",
                 gp.index, gp.id,
                 gp.buttons.length, gp.axes.length);
-            self.gamepadIndex = 0;//gp.index;
+            self.gamepadIndex = 0;//gp.index;            
         });
         window.addEventListener("gamepaddisconnected", (e) => {
             let gp = (<GamepadEvent>e).gamepad;
@@ -100,7 +90,13 @@ class InputComponent {
 
     update() {
         let gamepads = navigator.getGamepads();
-        let gp = (this.gamepadIndex >= 0) ? gamepads[this.gamepadIndex] : null;
+        let gp = null;
+        for (let i = 0; i < gamepads.length; i++) {
+            if (gamepads[i]) {
+                gp = gamepads[i];
+                break;
+            }
+        }
         if (gp) {
             if (gp.axes.length >= 4) {
                 this.gamepadStick1.x = Math.abs(gp.axes[0]) > 0.1 ? gp.axes[0] : 0;
@@ -121,6 +117,7 @@ class InputComponent {
                 this.gamepadSelect = gp.buttons[8].value;
                 this.gamepadStart = gp.buttons[9].value;
             }
+            let gpinfo = document.getElementById("gamepaddebug");            if (gpinfo) gpinfo.innerText = gp.id + " connected";
         }
     }
 

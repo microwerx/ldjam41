@@ -11,12 +11,17 @@
     <h1 id="headerTitle">TITLE</h1>
     <h2 id="headerAuthor">AUTHOR</h2>
     <hr/>
-    <script src="js/game.js"></script>
+    <div id="game"> 
+        <div id="webgldiv"></div>
+        <div id="graphicsdiv"></div>       
+        <script src="js/game.js"></script>
+    </div>
     <hr/>
     <p id="gameInstructions">Game Instructions</p>
     <p>
         <img src="assets/images/iconmonstr-gamepad.svg" /> Controls
         <input class="mycontrols" type="button" value="Switch to ZQSD" id="zqsd" onclick="swapZQSD()" />
+        <span id="gamepaddebug"></span>
     </p>
 
     <table style="margin: auto; width: 640px; font-family: EssentialPragmataPro,consolas,fixed;">
@@ -27,7 +32,9 @@
             <td style="width: 32px; text-align: left;">
                 <img src="assets/images/iconmonstr-arrow-left.svg" />
             </td>
-            <td><span id="leftInstructions">Left Instructions</span></td>
+            <td>
+                <span id="leftInstructions">Left Instructions</span>
+            </td>
         </tr>
         <tr>
             <td style="width: 32px; text-align: left;">
@@ -70,7 +77,10 @@
         </tr>
     </table>
 
-    <script>game.setInstructions();</script>
+    <script>
+        game.setInstructions();
+        game.run();
+    </script>
 </body>
 
 </html>

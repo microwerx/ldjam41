@@ -16,7 +16,7 @@ class Game {
     states: StateMachine = new StateMachine();
 
     constructor() {
-        this.XOR = new LibXOR(640, 512, true);
+        this.XOR = new LibXOR(640, 512);
         this.gameover = true;
         this.gamelevel = 1;
         this.score = 0;
@@ -31,8 +31,6 @@ class Game {
         if (e = document.getElementById("headerAuthor")) {
             e.innerHTML = this.author;
         }
-        this.XOR.Graphics.hide();
-        if (this.XOR.Fluxions) this.XOR.Fluxions.hide();
     }
 
 
@@ -171,7 +169,11 @@ class Game {
             let sg = this.XOR.Scenegraph;
             let b1 = sg.GetNode("test.scn", "bunny");
             let b2 = sg.GetNode("test.scn", "bunny2");
+            b1.geometryGroup = "bunny.obj";
             b2.geometryGroup = "bunny.obj";
+
+            let mouse = XOR.Input.lastClick;
+            b1.posttransform = Matrix4.makeTranslation(mouse.x / 320 - 1, -mouse.y / 256 + 1 + GTE.oscillateBetween(XOR.t1, 0.5, 0.0, -0.5, 0.5), 0.0);
             let dirto = b2.dirto(b1).norm().mul(0.1 * XOR.dt);
             b2.posttransform.Translate(dirto.x, dirto.y, dirto.z);
 
@@ -211,75 +213,71 @@ class Game {
         let g = XOR.Graphics;
         g.setFont("Salsbury,EssentialPragmataPro,consolas,fixed", 32);
 
-
-        let gameLoading = 0;
-        if (XOR.Scenegraph && XOR.Scenegraph.loaded) {
-            if (XOR.Fluxions) XOR.Fluxions.show();
-            gameLoading++;
+        let assetsLoaded = 1;
+        if (!XOR.Scenegraph.loaded || !g.spritesLoaded) {
+            assetsLoaded = 0;
         }
-        if (g.spritesLoaded) gameLoading++;
 
-        if (gameLoading != 2) {
-            g.show();
+        if (!assetsLoaded) {
             g.clearScreen('blue');
             g.putTextAligned('Loading', 'white', 0, 0, 0, 0);
         } else {
-            g.hide();
-            g.clearScreen('lightblue');
-            if (XOR.Input.getkey(KEY_LEFT))
-                g.clearScreen('lightblue');
-            else if (XOR.Input.getkey(KEY_RIGHT))
-                g.clearScreen('yellow');
+            this.draw3d();
+            g.clearScreen();
+            this.draw2d();
+            this.draw2doverlay();
+        }
+    }
 
-            g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
-            g.putTextAligned(this.states.topAlt, 'white', 1, -1, 0, 0);
+    draw3d() {
+        let XOR = this.XOR;
+        let sg = XOR.Scenegraph;
+        let gl = XOR.Fluxions.gl;
+        gl.clearColor(0.2, 0.3 * GTE.oscillate(XOR.t1, 0.5, 0.0, 0.3, 0.0), 0.4, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-            g.drawTiles();
-            g.drawSprites();
+        let rc = sg.UseRenderConfig("default");
+        if (rc) {
+            sg.sunlight.setOrbit(45, 45, 10);
+            sg.camera.angleOfView = 45;
+            sg.camera.setLookAt(Vector3.make(0, 0, 5), Vector3.make(0, 0, 0), Vector3.make(0, 1, 0));
+            sg.SetGlobalParameters(rc)
+            sg.RenderScene(rc, "");
+        }
+    }
 
-            if (this.states.topName == "MAINMENU") {
-                g.putTextAligned(this.title, 'white', 0, 0, 0, -g.height / 5);
-                g.putTextAligned('Press START!', 'red', 0, 0, 0, 0);
-            } else {
-                g.context.fillStyle = 'red';
-            }
+    draw2d() {
+        let g = this.XOR.Graphics;
+        g.drawTiles();
+        g.drawSprites();
+    }
 
-            if (this.states.topName == "ASKTOQUIT") {
-                g.putTextAligned("REALLY QUIT?", 'white', 0, 0, 0, 0);
-                g.putTextAligned("ESCAPE = NO", 'white', 0, 0, 0, g.fontHeight * 2);
-                g.putTextAligned("ENTER = YES", "white", 0, 0, 0, g.fontHeight * 3);
-            }
+    draw2doverlay() {
+        let g = this.XOR.Graphics;
+        g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
+        g.putTextAligned(this.states.topAlt, 'white', 1, -1, 0, 0);
 
-            if (this.states.topName == "READY") {
-                g.putTextAligned('READY!', 'red', -1, 1, 0, 0);
-            }
-            if (this.states.topName == "SET") {
-                g.putTextAligned('SET!', 'yellow', 0, 1, 0, 0);
-            }
-            if (this.states.topName == "GO") {
-                g.putTextAligned('GO!!!', 'green', 1, 1, 0, 0);
-            }
+        if (this.states.topName == "MAINMENU") {
+            g.putTextAligned(this.title, 'white', 0, 0, 0, -g.height / 5);
+            g.putTextAligned('Press START!', 'red', 0, 0, 0, 0);
+        } else {
+            g.context.fillStyle = 'red';
         }
 
-        if (XOR.Fluxions && XOR.Scenegraph) {
-            let sg = XOR.Scenegraph;
-            let gl = XOR.Fluxions.gl;
-            gl.clearColor(0.2, 0.3 * GTE.oscillate(XOR.t1, 0.5, 0.0, 0.3, 0.0), 0.4, 1.0);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        if (this.states.topName == "ASKTOQUIT") {
+            g.putTextAligned("REALLY QUIT?", 'white', 0, 0, 0, 0);
+            g.putTextAligned("ESCAPE = NO", 'white', 0, 0, 0, g.fontHeight * 2);
+            g.putTextAligned("ENTER = YES", "white", 0, 0, 0, g.fontHeight * 3);
+        }
 
-            let bunny = sg.GetNode("test.scn", "bunny");
-            bunny.geometryGroup = "bunny.obj";
-            let mouse = XOR.Input.lastClickWebGL;
-            bunny.posttransform = Matrix4.makeTranslation(mouse.x/320-1, -mouse.y/256+1 + GTE.oscillateBetween(XOR.t1, 0.5, 0.0, -0.5, 0.5), 0.0);
-
-            let rc = sg.UseRenderConfig("default");
-            if (rc) {
-                sg.sunlight.setOrbit(45, 45, 10);
-                sg.camera.angleOfView = 45;
-                sg.camera.setLookAt(Vector3.make(0, 0, 5), Vector3.make(0, 0, 0), Vector3.make(0, 1, 0));
-                sg.SetGlobalParameters(rc)
-                sg.RenderScene(rc, "");
-            }
+        if (this.states.topName == "READY") {
+            g.putTextAligned('READY!', 'red', -1, 1, 0, 0);
+        }
+        if (this.states.topName == "SET") {
+            g.putTextAligned('SET!', 'yellow', 0, 1, 0, 0);
+        }
+        if (this.states.topName == "GO") {
+            g.putTextAligned('GO!!!', 'green', 1, 1, 0, 0);
         }
     }
 
@@ -328,4 +326,3 @@ function swapZQSD() {
 
 
 let game = new Game();
-game.run();

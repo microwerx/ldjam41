@@ -37,14 +37,12 @@ class LibXOR {
     Music: MusicComponent;
     Timers: TimerComponent;
     Sounds: Toadfish;
-    Fluxions: RenderingContext | null = null;
-    Scenegraph: Scenegraph | null = null;
+    Fluxions: RenderingContext;
+    Scenegraph: Scenegraph;
 
-    constructor(readonly width: number = 640, readonly height: number = 512, readonly hasWebGLContext: boolean = false) {
-        if (hasWebGLContext) {
-            this.Fluxions = new RenderingContext(width, height);
-            this.Scenegraph = new Scenegraph(this.Fluxions);
-        }
+    constructor(readonly width: number = 640, readonly height: number = 512) {
+        this.Fluxions = new RenderingContext(width, height);
+        this.Scenegraph = new Scenegraph(this.Fluxions);
         this.Graphics = new GraphicsComponent(this, width, height);
 
         this.Input = new InputComponent();

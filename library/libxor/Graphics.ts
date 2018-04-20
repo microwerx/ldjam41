@@ -81,7 +81,9 @@ class GraphicsComponent {
                     let tile = this._tiles[i];
                     if (tile == 0 && layer != 0) continue;
                     if (x + col * twidth > this.width) break;
-                    this.drawSprite(tile, x + col * twidth, y + row * theight);
+                    if (tile > 0 && tile < this._tiles.length) {
+                        this.drawSprite(tile, x + col * twidth, y + row * theight);
+                    }
                 }
                 if (y * row * theight > this.height) break;
             }
@@ -135,9 +137,13 @@ class GraphicsComponent {
         this.context.font = pixelHeight.toString() + 'px ' + fontName + ',fixed';
     }
 
-    clearScreen(color: string) {
-        this.context.fillStyle = color || "black";
-        this.context.fillRect(0, 0, this.width, this.height);
+    clearScreen(color: string | null = null) {
+        if (color) {
+            this.context.fillStyle = color || "black";
+            this.context.fillRect(0, 0, this.width, this.height);
+        } else {
+            this.context.clearRect(0, 0, this.width, this.height);
+        }
     }
 
     loadSprites(url: string) {
@@ -241,7 +247,6 @@ class GraphicsComponent {
         let cols = (this.sprites.width / 8) | 0;
         let sx = index % cols;
         let sy = (index / cols) | 0;
-        g.globalCompositeOperation = "copy";
         g.putImageData(this.spriteImages[index], x, y);
         // if (this.spriteImages[index]) {
         //     g.drawImage(this.spriteImages[index], x, y);

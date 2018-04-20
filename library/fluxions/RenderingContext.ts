@@ -36,10 +36,10 @@ class RenderingContext {
 
     constructor(public width: number = 640, public height: number = 512) {
         let appendDiv = false;
-        let e = document.getElementById("fluxionsdiv");
+        let e = document.getElementById("webgldiv");
         if (!e) {
             this.divElement_ = document.createElement("div");
-            this.divElement_.id = "fluxionsdiv";
+            this.divElement_.id = "webgldiv";
             appendDiv = true;
         } else {
             this.divElement_ = <HTMLDivElement>e;

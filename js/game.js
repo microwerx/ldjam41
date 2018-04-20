@@ -1289,10 +1289,10 @@ class RenderingContext {
         this.aspectRatio = 1.0;
         this._visible = false;
         let appendDiv = false;
-        let e = document.getElementById("fluxionsdiv");
+        let e = document.getElementById("webgldiv");
         if (!e) {
             this.divElement_ = document.createElement("div");
-            this.divElement_.id = "fluxionsdiv";
+            this.divElement_.id = "webgldiv";
             appendDiv = true;
         }
         else {
@@ -3994,7 +3994,9 @@ class GraphicsComponent {
                         continue;
                     if (x + col * twidth > this.width)
                         break;
-                    this.drawSprite(tile, x + col * twidth, y + row * theight);
+                    if (tile > 0 && tile < this._tiles.length) {
+                        this.drawSprite(tile, x + col * twidth, y + row * theight);
+                    }
                 }
                 if (y * row * theight > this.height)
                     break;
@@ -4011,9 +4013,14 @@ class GraphicsComponent {
         this._fontPixelSlantAdjust = pixelHeight * Math.sin(Math.PI / 18) | 0;
         this.context.font = pixelHeight.toString() + 'px ' + fontName + ',fixed';
     }
-    clearScreen(color) {
-        this.context.fillStyle = color || "black";
-        this.context.fillRect(0, 0, this.width, this.height);
+    clearScreen(color = null) {
+        if (color) {
+            this.context.fillStyle = color || "black";
+            this.context.fillRect(0, 0, this.width, this.height);
+        }
+        else {
+            this.context.clearRect(0, 0, this.width, this.height);
+        }
     }
     loadSprites(url) {
         let self = this;
@@ -4110,7 +4117,6 @@ class GraphicsComponent {
         let cols = (this.sprites.width / 8) | 0;
         let sx = index % cols;
         let sy = (index / cols) | 0;
-        g.globalCompositeOperation = "copy";
         g.putImageData(this.spriteImages[index], x, y);
         // if (this.spriteImages[index]) {
         //     g.drawImage(this.spriteImages[index], x, y);
@@ -4179,8 +4185,7 @@ const KEY_DOWN = 13;
 class InputComponent {
     constructor() {
         this.wasdFormat = true;
-        this.lastClickWebGL = Vector3.make(0, 0, 0);
-        this.lastClickCanvas = Vector3.make(0, 0, 0);
+        this.lastClick = Vector3.make(0, 0, 0);
         this.gamepadStick1 = Vector3.make(0, 0, 0);
         this.gamepadStick2 = Vector3.make(0, 0, 0);
         this.gamepadDpad = Vector3.make(0, 0, 0);
@@ -4203,25 +4208,16 @@ class InputComponent {
         let e = document.getElementById("graphicscanvas");
         if (e) {
             e.addEventListener("mousedown", (e) => {
-                self.onmousedown(e, this.lastClickCanvas);
+                self.onmousedown(e, this.lastClick);
             });
             e.addEventListener("mouseup", (e) => {
-                self.onmouseup(e, this.lastClickCanvas);
-            });
-        }
-        e = document.getElementById("webglcanvas");
-        if (e) {
-            e.addEventListener("mouseup", (e) => {
-                self.onmouseup(e, this.lastClickWebGL);
-            });
-            e.addEventListener("mousedown", (e) => {
-                self.onmousedown(e, this.lastClickWebGL);
+                self.onmouseup(e, this.lastClick);
             });
         }
         window.addEventListener("gamepadconnected", (e) => {
             let gp = e.gamepad;
             console.log("Gamepad connected at index %d: %s. %d buttons, %d axes.", gp.index, gp.id, gp.buttons.length, gp.axes.length);
-            self.gamepadIndex = 0; //gp.index;
+            self.gamepadIndex = 0; //gp.index;            
         });
         window.addEventListener("gamepaddisconnected", (e) => {
             let gp = e.gamepad;
@@ -4231,7 +4227,13 @@ class InputComponent {
     }
     update() {
         let gamepads = navigator.getGamepads();
-        let gp = (this.gamepadIndex >= 0) ? gamepads[this.gamepadIndex] : null;
+        let gp = null;
+        for (let i = 0; i < gamepads.length; i++) {
+            if (gamepads[i]) {
+                gp = gamepads[i];
+                break;
+            }
+        }
         if (gp) {
             if (gp.axes.length >= 4) {
                 this.gamepadStick1.x = Math.abs(gp.axes[0]) > 0.1 ? gp.axes[0] : 0;
@@ -4251,6 +4253,9 @@ class InputComponent {
                 this.gamepadSelect = gp.buttons[8].value;
                 this.gamepadStart = gp.buttons[9].value;
             }
+            let gpinfo = document.getElementById("gamepaddebug");
+            if (gpinfo)
+                gpinfo.innerText = gp.id + " connected";
         }
     }
     onmousedown(e, v) {
@@ -4546,16 +4551,11 @@ class TimerComponent {
 /// <reference path="Music.ts" />
 /// <reference path="Timer.ts" />
 class LibXOR {
-    constructor(width = 640, height = 512, hasWebGLContext = false) {
+    constructor(width = 640, height = 512) {
         this.width = width;
         this.height = height;
-        this.hasWebGLContext = hasWebGLContext;
-        this.Fluxions = null;
-        this.Scenegraph = null;
-        if (hasWebGLContext) {
-            this.Fluxions = new RenderingContext(width, height);
-            this.Scenegraph = new Scenegraph(this.Fluxions);
-        }
+        this.Fluxions = new RenderingContext(width, height);
+        this.Scenegraph = new Scenegraph(this.Fluxions);
         this.Graphics = new GraphicsComponent(this, width, height);
         this.Input = new InputComponent();
         this.Music = new MusicComponent();
@@ -4663,7 +4663,7 @@ class Game {
         this.gamelevel = 1;
         this.score = 0;
         this.states = new StateMachine();
-        this.XOR = new LibXOR(640, 512, true);
+        this.XOR = new LibXOR(640, 512);
         this.gameover = true;
         this.gamelevel = 1;
         this.score = 0;
@@ -4678,9 +4678,6 @@ class Game {
         if (e = document.getElementById("headerAuthor")) {
             e.innerHTML = this.author;
         }
-        this.XOR.Graphics.hide();
-        if (this.XOR.Fluxions)
-            this.XOR.Fluxions.hide();
     }
     focus() {
         this.XOR.Graphics.focus();
@@ -4795,7 +4792,10 @@ class Game {
             let sg = this.XOR.Scenegraph;
             let b1 = sg.GetNode("test.scn", "bunny");
             let b2 = sg.GetNode("test.scn", "bunny2");
+            b1.geometryGroup = "bunny.obj";
             b2.geometryGroup = "bunny.obj";
+            let mouse = XOR.Input.lastClick;
+            b1.posttransform = Matrix4.makeTranslation(mouse.x / 320 - 1, -mouse.y / 256 + 1 + GTE.oscillateBetween(XOR.t1, 0.5, 0.0, -0.5, 0.5), 0.0);
             let dirto = b2.dirto(b1).norm().mul(0.1 * XOR.dt);
             b2.posttransform.Translate(dirto.x, dirto.y, dirto.z);
             let d = sg.GetNode("test.scn", "dragon");
@@ -4832,69 +4832,65 @@ class Game {
         let XOR = this.XOR;
         let g = XOR.Graphics;
         g.setFont("Salsbury,EssentialPragmataPro,consolas,fixed", 32);
-        let gameLoading = 0;
-        if (XOR.Scenegraph && XOR.Scenegraph.loaded) {
-            if (XOR.Fluxions)
-                XOR.Fluxions.show();
-            gameLoading++;
+        let assetsLoaded = 1;
+        if (!XOR.Scenegraph.loaded || !g.spritesLoaded) {
+            assetsLoaded = 0;
         }
-        if (g.spritesLoaded)
-            gameLoading++;
-        if (gameLoading != 2) {
-            g.show();
+        if (!assetsLoaded) {
             g.clearScreen('blue');
             g.putTextAligned('Loading', 'white', 0, 0, 0, 0);
         }
         else {
-            g.hide();
-            g.clearScreen('lightblue');
-            if (XOR.Input.getkey(KEY_LEFT))
-                g.clearScreen('lightblue');
-            else if (XOR.Input.getkey(KEY_RIGHT))
-                g.clearScreen('yellow');
-            g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
-            g.putTextAligned(this.states.topAlt, 'white', 1, -1, 0, 0);
-            g.drawTiles();
-            g.drawSprites();
-            if (this.states.topName == "MAINMENU") {
-                g.putTextAligned(this.title, 'white', 0, 0, 0, -g.height / 5);
-                g.putTextAligned('Press START!', 'red', 0, 0, 0, 0);
-            }
-            else {
-                g.context.fillStyle = 'red';
-            }
-            if (this.states.topName == "ASKTOQUIT") {
-                g.putTextAligned("REALLY QUIT?", 'white', 0, 0, 0, 0);
-                g.putTextAligned("ESCAPE = NO", 'white', 0, 0, 0, g.fontHeight * 2);
-                g.putTextAligned("ENTER = YES", "white", 0, 0, 0, g.fontHeight * 3);
-            }
-            if (this.states.topName == "READY") {
-                g.putTextAligned('READY!', 'red', -1, 1, 0, 0);
-            }
-            if (this.states.topName == "SET") {
-                g.putTextAligned('SET!', 'yellow', 0, 1, 0, 0);
-            }
-            if (this.states.topName == "GO") {
-                g.putTextAligned('GO!!!', 'green', 1, 1, 0, 0);
-            }
+            this.draw3d();
+            g.clearScreen();
+            this.draw2d();
+            this.draw2doverlay();
         }
-        if (XOR.Fluxions && XOR.Scenegraph) {
-            let sg = XOR.Scenegraph;
-            let gl = XOR.Fluxions.gl;
-            gl.clearColor(0.2, 0.3 * GTE.oscillate(XOR.t1, 0.5, 0.0, 0.3, 0.0), 0.4, 1.0);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            let bunny = sg.GetNode("test.scn", "bunny");
-            bunny.geometryGroup = "bunny.obj";
-            let mouse = XOR.Input.lastClickWebGL;
-            bunny.posttransform = Matrix4.makeTranslation(mouse.x / 320 - 1, -mouse.y / 256 + 1 + GTE.oscillateBetween(XOR.t1, 0.5, 0.0, -0.5, 0.5), 0.0);
-            let rc = sg.UseRenderConfig("default");
-            if (rc) {
-                sg.sunlight.setOrbit(45, 45, 10);
-                sg.camera.angleOfView = 45;
-                sg.camera.setLookAt(Vector3.make(0, 0, 5), Vector3.make(0, 0, 0), Vector3.make(0, 1, 0));
-                sg.SetGlobalParameters(rc);
-                sg.RenderScene(rc, "");
-            }
+    }
+    draw3d() {
+        let XOR = this.XOR;
+        let sg = XOR.Scenegraph;
+        let gl = XOR.Fluxions.gl;
+        gl.clearColor(0.2, 0.3 * GTE.oscillate(XOR.t1, 0.5, 0.0, 0.3, 0.0), 0.4, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        let rc = sg.UseRenderConfig("default");
+        if (rc) {
+            sg.sunlight.setOrbit(45, 45, 10);
+            sg.camera.angleOfView = 45;
+            sg.camera.setLookAt(Vector3.make(0, 0, 5), Vector3.make(0, 0, 0), Vector3.make(0, 1, 0));
+            sg.SetGlobalParameters(rc);
+            sg.RenderScene(rc, "");
+        }
+    }
+    draw2d() {
+        let g = this.XOR.Graphics;
+        g.drawTiles();
+        g.drawSprites();
+    }
+    draw2doverlay() {
+        let g = this.XOR.Graphics;
+        g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
+        g.putTextAligned(this.states.topAlt, 'white', 1, -1, 0, 0);
+        if (this.states.topName == "MAINMENU") {
+            g.putTextAligned(this.title, 'white', 0, 0, 0, -g.height / 5);
+            g.putTextAligned('Press START!', 'red', 0, 0, 0, 0);
+        }
+        else {
+            g.context.fillStyle = 'red';
+        }
+        if (this.states.topName == "ASKTOQUIT") {
+            g.putTextAligned("REALLY QUIT?", 'white', 0, 0, 0, 0);
+            g.putTextAligned("ESCAPE = NO", 'white', 0, 0, 0, g.fontHeight * 2);
+            g.putTextAligned("ENTER = YES", "white", 0, 0, 0, g.fontHeight * 3);
+        }
+        if (this.states.topName == "READY") {
+            g.putTextAligned('READY!', 'red', -1, 1, 0, 0);
+        }
+        if (this.states.topName == "SET") {
+            g.putTextAligned('SET!', 'yellow', 0, 1, 0, 0);
+        }
+        if (this.states.topName == "GO") {
+            g.putTextAligned('GO!!!', 'green', 1, 1, 0, 0);
         }
     }
     setInstructions() {
@@ -4941,7 +4937,6 @@ function swapZQSD() {
     game.focus();
 }
 let game = new Game();
-game.run();
 var Brainfish;
 (function (Brainfish) {
     class Perceptron1Output {
