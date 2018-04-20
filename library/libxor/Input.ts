@@ -103,7 +103,7 @@ class InputComponent {
                 this.gamepadStick1.y = Math.abs(gp.axes[1]) > 0.1 ? gp.axes[1] : 0;
                 this.gamepadStick2.x = Math.abs(gp.axes[2]) > 0.1 ? gp.axes[2] : 0;
                 this.gamepadStick2.y = Math.abs(gp.axes[3]) > 0.1 ? gp.axes[3] : 0;
-                
+
             }
             if (gp.buttons.length >= 10) {
                 this.gamepadButtons[0] = gp.buttons[0].value;
@@ -117,7 +117,11 @@ class InputComponent {
                 this.gamepadSelect = gp.buttons[8].value;
                 this.gamepadStart = gp.buttons[9].value;
             }
-            let gpinfo = document.getElementById("gamepaddebug");            if (gpinfo) gpinfo.innerText = gp.id + " connected";
+            let gpinfo = document.getElementById("gamepaddebug");
+            if (gpinfo) {
+                gpinfo.innerText = "gamepad connected";
+                gpinfo.className = "mycontrols";
+            }
         }
     }
 

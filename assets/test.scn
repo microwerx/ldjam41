@@ -13,5 +13,4 @@ translate -1 -.5 0
 geometryGroup teapot.obj
 
 o dragon
-translate 1 0 0
 geometryGroup dragon.obj

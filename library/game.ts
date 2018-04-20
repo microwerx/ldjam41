@@ -178,8 +178,13 @@ class Game {
             b2.posttransform.Translate(dirto.x, dirto.y, dirto.z);
 
             let d = sg.GetNode("test.scn", "dragon");
-            dirto = XOR.Input.gamepadStick1.mul(XOR.dt);
-            d.posttransform.Translate(dirto.x, -dirto.y, dirto.z);
+            dirto = XOR.Input.gamepadStick2.mul(XOR.dt);
+            let xangle = -XOR.Input.gamepadStick1.x * XOR.dt * 30;
+            let yangle = -XOR.Input.gamepadStick1.y * XOR.dt * 30;
+            let col3 = d.posttransform.col3(3);            
+            d.posttransform.Translate(dirto.y, 0, -dirto.x);
+            d.posttransform.Rotate(xangle, 0, 1, 0);
+            d.posttransform.Rotate(yangle, 0, 0, 1);
         }
 
 
