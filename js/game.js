@@ -3784,7 +3784,7 @@ const ARROW = 4;
 const RICESACK = 5;
 const RICEBOWL = 6;
 const GRAVESTONE = 7;
-const GEM = 8;
+const HEART = 8;
 const RUBY = 9;
 const GOLD = 10;
 const SNOW = 11;
@@ -3833,7 +3833,7 @@ function CreateSprites() {
     sprites[EAGLE] = [24, 25];
     sprites[SNAKE] = [18, 19];
     sprites[ARROW] = [20, 20];
-    sprites[GEM] = [21, 21];
+    sprites[HEART] = [21, 21];
     sprites[RUBY] = [22, 22];
     sprites[GOLD] = [23, 23];
     sprites[SNOW] = [26, 26];
@@ -3862,6 +3862,7 @@ class ActionGame {
         this.camelLocation = Vector3.make(64, 256, 0);
         this.playerLocation = Vector3.make(64, 256, 0);
         this.playerField = Vector2.make(64, 192);
+        this.sprites = CreateSprites();
         this.init();
     }
     init() {
@@ -3869,7 +3870,6 @@ class ActionGame {
         this.numCamels = 0;
         this.numEnemies = 0;
         this.animframe = 0;
-        this.sprites = CreateSprites();
         this.player = new Sprite(this.sprites[PLAYER][0]);
         this.player.position.reset(64 + GTE.rand1() * this.playerField.x, this.XOR.height / 2 + GTE.rand1() * this.playerField.y);
         for (let i = 0; i < MAX_CAMELS; i++) {
@@ -4125,14 +4125,42 @@ class ActionGame {
 const INITIAL_CAMELS = 16;
 const INITIAL_HEALTH = 16;
 const MILES_TO_TRAVEL = 6000;
+const CAMELS = 0;
+const MEDICINES = 1;
+const SACKSOFFOOD = 2;
+const MAX_MARKET_ITEMS = 3;
+const SCENARIO_CAMEL = 0;
+const SCENARIO_HEALTH = 1;
+const SCENARIO_FOOD = 2;
 class AdventureGame {
     constructor(XOR) {
         this.XOR = XOR;
         this.milesTraveled = 0;
         this.numCamels = 16;
-        this.playerHealth = 5;
+        this.numMedicines = 10;
+        this.numSacksOfFood = 5;
         this.numJewels = 100;
+        this.playerHealth = 5;
         this.numTurns = 0;
+        this.currentChoice = 0;
+        this.currentQuantity = 0;
+        this.currentScenario = 0;
+        this.currentScenarioDescription = "";
+        this.maxQuantity = 10;
+        this.market = [];
+        this.currentStepOfJourney = 0;
+        this.journeySteps = [
+            "Acre",
+            "Trebizond",
+            "Baghdad",
+            "Terbil",
+            "Ormuz",
+            "Balkh",
+            "Kashgar",
+            "Lanzhou",
+            "Karakorum",
+            "Beijing"
+        ];
         this.lines = [];
         this.sprites = CreateSprites();
         this.states = new StateMachine(XOR);
@@ -4158,6 +4186,8 @@ class AdventureGame {
         this.milesTraveled = 0;
         this.numCamels = INITIAL_CAMELS;
         this.playerHealth = INITIAL_HEALTH;
+        this.currentStepOfJourney = 0;
+        this.market = [0, 0, 0];
         this.lines = [
             "You are setting out on a fantastic",
             "journey...",
@@ -4170,35 +4200,246 @@ class AdventureGame {
     }
     start() {
         this.numTurns = 0;
+        this.states.push("SIM", "", 0);
     }
     update() {
         let XOR = this.XOR;
-        if (XOR.Timers.ended("simwait")) {
+        this.states.update(this.XOR.t1);
+        if (!XOR.Timers.ended("simwait"))
+            return;
+        if (this.states.topName == "SIM") {
             this.sim();
-            XOR.Timers.start("simwait", 4);
+        }
+        if (this.states.topName == "SCENARIO") {
+            this.scenario();
+            if (XOR.Timers.ended("GETKEY")) {
+                if (XOR.Input.buttons) {
+                    XOR.Input.clearkeys();
+                    XOR.Timers.start("GETKEY", 0.25);
+                    this.status();
+                    return;
+                }
+            }
+        }
+        if (this.states.topName == "STATUS") {
+            this.status();
+        }
+        if (this.states.topAlt == "GETCHOICE") {
+            if (XOR.Timers.ended("GETKEY")) {
+                let dy = XOR.Input.getkey2(KEY_UP, KEY_DOWN);
+                if (dy != 0) {
+                    this.currentChoice = GTE.clamp(this.currentChoice + dy, 0, 3);
+                    XOR.Input.clearkeys();
+                    XOR.Timers.start("GETKEY", 0.25);
+                }
+                if (XOR.Input.getkey(KEY_START)) {
+                    this.chooseQuantity();
+                    XOR.Input.clearkeys();
+                    XOR.Timers.start("GETKEY", 0.25);
+                }
+            }
+        }
+        if (this.states.topAlt == "GETQUANTITY") {
+            if (XOR.Timers.ended("GETKEY")) {
+                let dy = XOR.Input.getkey2(KEY_DOWN, KEY_UP);
+                if (dy != 0) {
+                    this.currentQuantity = GTE.clamp(this.currentQuantity + dy, 0, this.maxQuantity);
+                    XOR.Input.clearkeys();
+                    XOR.Timers.start("GETKEY", 0.2);
+                }
+                if (XOR.Input.getkey(KEY_START)) {
+                    this.makePurchase();
+                    XOR.Input.clearkeys();
+                    XOR.Timers.start("GETKEY", 0.2);
+                }
+                if (XOR.Input.getkey(KEY_BACK)) {
+                    this.states.pop();
+                    return;
+                }
+            }
         }
     }
-    printStatus() {
+    chooseQuantity() {
+        if (this.states.topName == "STATUS") {
+            switch (this.currentChoice) {
+                case 0:
+                    this.maxQuantity = Math.floor(this.numJewels / this.market[CAMELS]);
+                    break;
+                case 1:
+                    this.maxQuantity = Math.floor(this.numJewels / this.market[MEDICINES]);
+                    break;
+                case 2:
+                    this.maxQuantity = Math.floor(this.numJewels / this.market[SACKSOFFOOD]);
+                    break;
+                case 3:
+                    this.continueJourney();
+                    return;
+            }
+            this.currentQuantity = this.maxQuantity;
+            this.states.push("STATUS", "GETQUANTITY", 0);
+        }
+    }
+    buyCamels() {
+        this.numCamels += this.currentQuantity;
+        this.numJewels -= this.currentQuantity * this.market[CAMELS];
+    }
+    buyMedicine() {
+        this.numMedicines += this.currentQuantity;
+        this.numJewels -= this.currentQuantity * this.market[MEDICINES];
+    }
+    buyFood() {
+        this.numSacksOfFood += this.currentQuantity;
+        this.numJewels -= this.currentQuantity * this.market[SACKSOFFOOD];
+    }
+    continueJourney() {
+        this.numTurns++;
+        this.states.clear();
+        this.states.push("SIM", "", 0);
+        this.XOR.Timers.start("simwait", 2);
+    }
+    makePurchase() {
+        if (this.states.topName == "STATUS") {
+            switch (this.currentChoice) {
+                case 0:
+                    this.buyCamels();
+                    break;
+                case 1:
+                    this.buyMedicine();
+                    break;
+                case 2:
+                    this.buyFood();
+                    break;
+            }
+        }
+        this.states.pop();
+    }
+    scenario() {
+        if (this.states.topName != "SCENARIO") {
+            this.states.clear();
+            this.states.push("SCENARIO", "", 0);
+            this.states.push("SCENARIO", "GETCHOICE", 0);
+            this.currentScenario = GTE.random(0, 2) | 0;
+            switch (this.currentScenario) {
+                case SCENARIO_CAMEL:
+                    this.createCamelScenario();
+                    break;
+                case SCENARIO_HEALTH:
+                    this.createHealthScenario();
+                    break;
+                case SCENARIO_FOOD:
+                    this.createFoodScenario();
+                    break;
+            }
+            this.lines.push("");
+            this.lines.push("Press ENTER to continue");
+            this.states.push("SCENARIO", "PAUSE", 2);
+            return;
+        }
+    }
+    createCamelScenario() {
+        let lostCamels = GTE.random(0, Math.min(this.numCamels, 3)) | 0;
+        this.numCamels -= lostCamels;
+        let adverbs = ["unfortunate", "unthinkable", "improbable"];
         this.lines = [
-            "Number of camels: " + this.numCamels,
-            "Health: " + this.playerHealth
+            "Your camels suffered an " + adverbs[GTE.random(0, 2) | 0] + " accident.",
+            "You lost " + lostCamels + " camels."
+        ];
+    }
+    createHealthScenario() {
+        let lostHealth = GTE.random(0, Math.min(this.playerHealth, 3)) | 0;
+        this.playerHealth -= lostHealth;
+        ;
+        let issues = ["E. coli", "tapeworms", "the flu", "botulism"];
+        this.lines = [
+            "You got sick with " + issues[GTE.random(0, issues.length - 1) | 0] + ".",
+            "You lost " + lostHealth + " health rating points.",
+            "You have " + this.playerHealth + " health rating points remaining."
+        ];
+    }
+    createFoodScenario() {
+        let lostFood = GTE.random(0, Math.min(this.numSacksOfFood, 3)) | 0;
+        this.numSacksOfFood -= lostFood;
+        let issues = ["contamination", "camel spit", "bug infestation", "spoilage"];
+        this.lines = [
+            "Some food was lost due to " + issues[GTE.random(0, issues.length - 1) | 0] + ".",
+            "You lost " + lostFood + " sacks of food.",
+            "You have " + this.numSacksOfFood + " sacks of food remaining."
+        ];
+    }
+    status() {
+        if (this.states.topName != "STATUS") {
+            this.states.pop();
+            this.states.push("STATUS", "", 0);
+            this.states.push("STATUS", "GETCHOICE", 0);
+        }
+        this.lines = [
+            "You have traveled " + this.milesTraveled + " miles.",
+            "The province of " + this.journeySteps[this.currentStepOfJourney] + " is nearby.",
+            "",
+            "Status",
+            "-----------------  Owned",
+            " Number of camels  " + this.numCamels,
+            " Health            " + this.playerHealth,
+            " Sacks of Food     " + this.numSacksOfFood,
+            " Jewels            " + this.numJewels,
+            "",
+            "What would you like to do?",
+            "    Buy Camels",
+            "    Buy Medicine",
+            "    Buy Food",
+            "    Continue Journey"
         ];
     }
     sim() {
         this.numTurns++;
-        this.printStatus();
+        this.milesTraveled += GTE.random(50, 60) | 0;
+        let mix = this.milesTraveled / 6000.0;
+        this.market = [
+            GTE.lerp(GTE.random(9, 11), GTE.random(45, 55), mix) | 0,
+            GTE.lerp(GTE.random(9, 11), GTE.random(20, 25), mix) | 0,
+            GTE.lerp(GTE.random(9, 11), GTE.random(15, 25), mix) | 0 // FOOD
+        ];
+        if (this.numTurns > 0 && GTE.rand01() < 0.18) {
+            this.scenario();
+        }
+        else {
+            this.status();
+        }
     }
     draw(g) {
     }
     draw2doverlay(g) {
+        let x = 32;
         let y = 0;
         let font = g.context.font;
         g.setFont("EssentialPragmataPro", 32);
-        g.context.fillStyle = "black";
+        g.context.fillStyle = "white";
         g.context.textAlign = "left";
         for (let line of this.lines) {
-            g.putText(line, 0, y);
+            g.context.fillStyle = "black";
+            g.putText(line, x + 2, y + 2);
+            g.context.fillStyle = "white";
+            g.putText(line, x, y);
             y += 32;
+        }
+        if (this.states.topName == "STATUS") {
+            let sprites = [16, 21, 22, 7];
+            for (y = 0; y < 4; y++) {
+                g.drawSprite(sprites[y], 16, (6 + y) * 32 - 16);
+            }
+            g.putTextAligned("Cost", 'white', 1, -1, -32, 4 * 32);
+            for (y = 0; y < 3; y++) {
+                g.putTextAligned("" + this.market[y], 'white', 1, -1, -32, (5 + y) * 32);
+            }
+            if (this.XOR.Timers.ended("GETKEY")) {
+                g.context.fillStyle = "black";
+                g.putText(" ->", 64 + 2, (11 + this.currentChoice) * 32 + 2);
+                g.context.fillStyle = "white";
+                g.putText(" ->", 64, (11 + this.currentChoice) * 32);
+            }
+            if (this.states.topAlt == "GETQUANTITY") {
+                g.putText("" + this.currentQuantity, g.width - 32 * 5, 32 * (11 + this.currentChoice));
+            }
         }
         g.context.font = font;
     }
@@ -4770,6 +5011,9 @@ class InputComponent {
         v.x = e.offsetX;
         v.y = e.offsetY;
     }
+    clearkeys() {
+        this.buttons = 0;
+    }
     setkey(which, state) {
         if (which < 0 || which >= 32)
             return;
@@ -5123,6 +5367,9 @@ class StateMachine {
         this.states = [];
         this._t1 = 0;
     }
+    clear() {
+        this.states = [];
+    }
     update(tInSeconds) {
         this._t1 = tInSeconds;
         let topTime = this.topTime;
@@ -5198,7 +5445,7 @@ class Game {
         this.gamelevel = 1;
         this.score = 0;
         this.levelColors = [
-            ["#ffbf3f", '#ff3f3f'],
+            ["#7271dc", '#1a2dff'],
         ];
         this.currentEnvironmentColor = 'lightbrown';
         this.XOR = new LibXOR(640, 512);
@@ -5367,7 +5614,9 @@ class Game {
             }
             else if (this.actionGame.won) {
                 this.states.pop();
-                this.states.push("ACTIONGAME", "INIT", 0);
+                this.states.push("ADVENTUREGAME", "PLAY", 0);
+                this.adventureGame.start();
+                this.readySetGo();
                 this.states.push("ACTIONGAME", "WON", 4);
             }
             this.actionGame.update();

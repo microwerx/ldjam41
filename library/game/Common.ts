@@ -8,7 +8,7 @@ const ARROW = 4;
 const RICESACK = 5;
 const RICEBOWL = 6;
 const GRAVESTONE = 7;
-const GEM = 8;
+const HEART = 8;
 const RUBY = 9;
 const GOLD = 10;
 const SNOW = 11;
@@ -62,7 +62,7 @@ function CreateSprites(): [number, number][] {
     sprites[EAGLE] = [24, 25];
     sprites[SNAKE] = [18, 19];
     sprites[ARROW] = [20, 20];
-    sprites[GEM] = [21, 21];
+    sprites[HEART] = [21, 21];
     sprites[RUBY] = [22, 22];
     sprites[GOLD] = [23, 23];
     sprites[SNOW] = [26, 26];

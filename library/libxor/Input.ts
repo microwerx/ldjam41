@@ -137,6 +137,10 @@ class InputComponent {
         v.y = e.offsetY;
     }
 
+    clearkeys() {
+        this.buttons = 0;
+    }
+
     setkey(which: number, state: boolean) {
         if (which < 0 || which >= 32)
             return;

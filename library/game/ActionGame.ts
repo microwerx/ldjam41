@@ -22,6 +22,7 @@ class ActionGame {
     readonly playerField: Vector2 = Vector2.make(64, 192);
 
     constructor(public XOR: LibXOR) {
+        this.sprites = CreateSprites();
         this.init();
     }
 
@@ -30,8 +31,6 @@ class ActionGame {
         this.numCamels = 0;
         this.numEnemies = 0;
         this.animframe = 0;
-        
-        this.sprites = CreateSprites();
 
         this.player = new Sprite(this.sprites[PLAYER][0]);
         this.player.position.reset(64 + GTE.rand1() * this.playerField.x,

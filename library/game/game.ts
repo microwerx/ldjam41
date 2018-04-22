@@ -22,7 +22,7 @@ class Game {
     states: StateMachine;
 
     levelColors: [string, string][] = [
-        ["#ffbf3f", '#ff3f3f'],
+        ["#7271dc", '#1a2dff'],
     ];
     currentEnvironmentColor: string = 'lightbrown';
 
@@ -218,7 +218,9 @@ class Game {
             }
             else if (this.actionGame.won) {
                 this.states.pop();
-                this.states.push("ACTIONGAME", "INIT", 0);
+                this.states.push("ADVENTUREGAME", "PLAY", 0);
+                this.adventureGame.start();
+                this.readySetGo();
                 this.states.push("ACTIONGAME", "WON", 4);
             }
             this.actionGame.update();

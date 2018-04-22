@@ -43,6 +43,10 @@ class StateMachine {
         this._t1 = 0;
     }
 
+    clear() {
+        this.states = [];
+    }
+
     update(tInSeconds: number) {
         this._t1 = tInSeconds;
 
