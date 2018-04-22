@@ -225,6 +225,13 @@ class Vector3 {
         return this;
     }
 
+    distance(v: Vector3): number {
+        let dx = this.x - v.x;
+        let dy = this.y - v.y;
+        let dz = this.z - v.z;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
     get(index: number): number {
         switch (index) {
             case 0: return this.x;

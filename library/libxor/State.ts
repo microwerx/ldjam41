@@ -39,7 +39,7 @@ class StateMachine {
     states: State[] = [];
     private _t1: number;
 
-    constructor() {
+    constructor(public XOR: LibXOR) {
         this._t1 = 0;
     }
 
@@ -49,12 +49,19 @@ class StateMachine {
         let topTime = this.topTime;
         if (topTime > 0 && topTime < tInSeconds) {
             this.pop();
+            this.XOR.Sounds.playSound(this.topSound);
         }
     }
 
     push(name: string, alt: string, delayTime: number) {
         if (delayTime > 0) delayTime += this._t1;
         this.states.push(new State(name, alt, delayTime));
+    }
+
+    pushwithsound(name: string, alt: string, delayTime: number, sound: string, music: string) {
+        if (delayTime > 0) delayTime += this._t1;
+        this.states.push(new State(name, alt, delayTime, sound, music));
+        this.push(name, "PAUSE", 0.01);
     }
 
     pop() {
@@ -84,5 +91,21 @@ class StateMachine {
             return this.states[l - 1].delayTime;
         }
         return -1;
+    }
+
+    get topSound(): string {
+        let l = this.states.length;
+        if (l > 0) {
+            return this.states[l - 1].queueSound;
+        }
+        return "NONE";
+    }
+
+    get topMusic(): string {
+        let l = this.states.length;
+        if (l > 0) {
+            return this.states[l - 1].queueMusic;
+        }
+        return "NONE";
     }
 }

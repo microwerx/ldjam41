@@ -22,7 +22,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-/// <reference path="../Hatchetfish.ts" />
+/// <reference path="../misc/Hatchetfish.ts" />
 /// <reference path="../gte/GTE.ts" />
 /// <reference path="RenderingContext.ts" />
 /// <reference path="RenderConfig.ts" />

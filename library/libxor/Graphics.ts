@@ -117,6 +117,7 @@ class GraphicsComponent {
         this.context = ctx2d;
         this.context.imageSmoothingEnabled = false;
         this.canvasElement_.setAttribute('cssText', "image-rendering: pixelated;");
+        //this.context.globalCompositeOperation = "source-in";
 
         this.OAM = [];
 
@@ -137,7 +138,7 @@ class GraphicsComponent {
         this.context.font = pixelHeight.toString() + 'px ' + fontName + ',fixed';
     }
 
-    clearScreen(color: string | null = null) {
+    clearScreen(color: string | CanvasGradient | CanvasPattern | null = null) {
         if (color) {
             this.context.fillStyle = color || "black";
             this.context.fillRect(0, 0, this.width, this.height);
@@ -196,11 +197,15 @@ class GraphicsComponent {
             for (let x = 0; x < this.sprites.width; x += 8) {
                 let src = ctx.getImageData(x, y, 8, 8);
                 let dst = this.resize(src, 32, 32);
-                // let image = createImageBitmap(dst).then((value) => {
-                //     self.spriteImages[i] = value;
-                // });
                 this.spriteImages[i] = dst;
                 i++;
+            }
+        }
+
+        this.spriteCoords.length = cols * rows;
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                this.spriteCoords[y * cols + x] = [ x * 8, y * 8 ];
             }
         }
     }
@@ -242,7 +247,7 @@ class GraphicsComponent {
         this.putText(text, x, y);
     }
 
-    drawSprite(index: number, x: number, y: number) {
+    putSprite(index: number, x: number, y: number) {
         let g = this.context;
         let cols = (this.sprites.width / 8) | 0;
         let sx = index % cols;
@@ -254,11 +259,25 @@ class GraphicsComponent {
         //g.drawImage(this.sprites, sx * 8, sy * 8, 8, 8, x, y, 32, 32);
     }
 
+    private spriteCoords: [number, number][] = [];
+    drawSprite(index: number, x: number, y: number) {
+        let g = this.context;
+        let sx = this.spriteCoords[index][0];
+        let sy = this.spriteCoords[index][1];
+        g.drawImage(this.sprites, sx, sy, 8, 8, x - 16, y - 16, 32, 32);
+    }
+
     drawSprites() {
         for (let sprite of this.OAM) {
             if (sprite.enabled)
-                this.drawSprite(sprite.index, sprite.x + sprite.offset.x, sprite.y + sprite.offset.y);
+                this.drawSprite(sprite.index, sprite.position.x + sprite.offset.x, sprite.position.y + sprite.offset.y);
         }
+    }
+
+    drawBox(x: number, y: number, color: string) {
+        let g = this.context;
+        g.fillStyle = color || 'black';
+        g.fillRect(x-2, y-2, 4, 4);
     }
 
     get canvas(): HTMLCanvasElement {

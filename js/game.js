@@ -1,4 +1,67 @@
 "use strict";
+class Hatchetfish {
+    constructor(logElementId = "") {
+        this._logElementId = "";
+        this._logElement = null;
+        this._numLines = 0;
+        this.logElement = logElementId;
+    }
+    set logElement(id) {
+        let el = document.getElementById(id);
+        if (el instanceof HTMLDivElement) {
+            this._logElement = el;
+            this._logElementId = id;
+        }
+    }
+    clear() {
+        this._numLines = 0;
+        if (this._logElement) {
+            this._logElement.innerHTML = "";
+        }
+        let errorElement = document.getElementById("errors");
+        if (errorElement) {
+            errorElement.remove();
+            //errorElement.innerHTML = "";
+        }
+    }
+    writeToLog(prefix, message, ...optionalParams) {
+        let text = prefix + ": " + message;
+        for (let op of optionalParams) {
+            if (op.toString) {
+                text += " " + op.toString();
+            }
+            else {
+                text += " <unknown>";
+            }
+        }
+        if (this._logElement) {
+            let newHTML = "<br/>" + text + this._logElement.innerHTML;
+            this._logElement.innerHTML = newHTML;
+            //this._logElement.appendChild(document.createElement("br"));
+            //this._logElement.appendChild(document.createTextNode(text));
+        }
+    }
+    log(message, ...optionalParams) {
+        this.writeToLog("[LOG]", message, ...optionalParams);
+        console.log(message, ...optionalParams);
+    }
+    info(message, ...optionalParams) {
+        this.writeToLog("[INF]", message, ...optionalParams);
+        console.info(message, ...optionalParams);
+    }
+    error(message, ...optionalParams) {
+        this.writeToLog("[ERR]", message, ...optionalParams);
+        console.error(message, ...optionalParams);
+    }
+    warn(message, ...optionalParams) {
+        this.writeToLog("[WRN]", message, ...optionalParams);
+        console.warn(message, optionalParams);
+    }
+    debug(message, ...optionalParams) {
+        console.log(message, ...optionalParams);
+    }
+}
+var hflog = new Hatchetfish();
 // Fluxions Geometry Transformation Engine WebGL Library
 // Copyright (c) 2017 - 2018 Jonathan Metzgar
 // All Rights Reserved.
@@ -91,6 +154,13 @@ class Vector2 {
     }
     static make(x, y) {
         return new Vector2(x, y);
+    }
+    static makeUnit(x, y) {
+        let lengthSquared = x * x + y * y;
+        if (lengthSquared == 0.0)
+            return new Vector2(0, 0);
+        let length = Math.sqrt(lengthSquared);
+        return new Vector2(x / length, y / length);
     }
     static dot(v1, v2) {
         return v1.x * v2.x + v1.y * v2.y;
@@ -267,6 +337,12 @@ class Vector3 {
         this.y /= len;
         this.z /= len;
         return this;
+    }
+    distance(v) {
+        let dx = this.x - v.x;
+        let dy = this.y - v.y;
+        let dz = this.z - v.z;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
     get(index) {
         switch (index) {
@@ -1068,6 +1144,18 @@ var GTE;
         return Math.sin(frequency * t + phase) * (upperLimit - lowerLimit) * 0.5 + lowerLimit;
     }
     GTE.oscillateBetween = oscillateBetween;
+    function random(a, b) {
+        return Math.random() * (b - a + 1) + a;
+    }
+    GTE.random = random;
+    function rand01() {
+        return Math.random();
+    }
+    GTE.rand01 = rand01;
+    function rand1() {
+        return Math.random() * 2 - 1;
+    }
+    GTE.rand1 = rand1;
     function clamp(x, a, b) {
         return x < a ? a : x > b ? b : x;
     }
@@ -1121,140 +1209,6 @@ var GTE;
     }
     GTE.max3 = max3;
 })(GTE || (GTE = {}));
-class Hatchetfish {
-    constructor(logElementId = "") {
-        this._logElementId = "";
-        this._logElement = null;
-        this._numLines = 0;
-        this.logElement = logElementId;
-    }
-    set logElement(id) {
-        let el = document.getElementById(id);
-        if (el instanceof HTMLDivElement) {
-            this._logElement = el;
-            this._logElementId = id;
-        }
-    }
-    clear() {
-        this._numLines = 0;
-        if (this._logElement) {
-            this._logElement.innerHTML = "";
-        }
-        let errorElement = document.getElementById("errors");
-        if (errorElement) {
-            errorElement.remove();
-            //errorElement.innerHTML = "";
-        }
-    }
-    writeToLog(prefix, message, ...optionalParams) {
-        let text = prefix + ": " + message;
-        for (let op of optionalParams) {
-            if (op.toString) {
-                text += " " + op.toString();
-            }
-            else {
-                text += " <unknown>";
-            }
-        }
-        if (this._logElement) {
-            let newHTML = "<br/>" + text + this._logElement.innerHTML;
-            this._logElement.innerHTML = newHTML;
-            //this._logElement.appendChild(document.createElement("br"));
-            //this._logElement.appendChild(document.createTextNode(text));
-        }
-    }
-    log(message, ...optionalParams) {
-        this.writeToLog("[LOG]", message, ...optionalParams);
-        console.log(message, ...optionalParams);
-    }
-    info(message, ...optionalParams) {
-        this.writeToLog("[INF]", message, ...optionalParams);
-        console.info(message, ...optionalParams);
-    }
-    error(message, ...optionalParams) {
-        this.writeToLog("[ERR]", message, ...optionalParams);
-        console.error(message, ...optionalParams);
-    }
-    warn(message, ...optionalParams) {
-        this.writeToLog("[WRN]", message, ...optionalParams);
-        console.warn(message, optionalParams);
-    }
-    debug(message, ...optionalParams) {
-        console.log(message, ...optionalParams);
-    }
-}
-var hflog = new Hatchetfish();
-// Toadfish Library
-// Copyright (c) 2017 - 2018 Jonathan Metzgar
-// All Rights Reserved.
-//
-// MIT License
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-//
-/// <reference path="./gte/GTE.ts" />
-class Toadfish {
-    constructor() {
-        this._sounds = new Map();
-        this._buffers = [];
-        this._curbuffer = 0;
-        this._context = new AudioContext();
-        if (!this._context) {
-            throw "Unable to use Web Audio API";
-        }
-        this._soundVolume = this._context.createGain();
-    }
-    setSound(name, ab) {
-        this._sounds.set(name, ab);
-    }
-    setVolume(amount) {
-        this._soundVolume.gain.value = GTE.clamp(amount, 0, 1);
-    }
-    playSound(name) {
-        let sfx = this._sounds.get(name);
-        if (!sfx)
-            return;
-        // if (this._buffers.length < 32) {
-        //     this._buffers.push(this._context.createBufferSource())
-        //     this._curbuffer = this._buffers.length - 1;
-        // }
-        // else {
-        //     this._curbuffer = (this._curbuffer + 1) % 32;
-        // }
-        let source = this._context.createBufferSource(); //this._buffers[this._curbuffer];
-        source.buffer = sfx;
-        source.connect(this._context.destination);
-        source.start(0);
-    }
-    queueSound(name, url) {
-        let self = this;
-        let request = new XMLHttpRequest();
-        request.open("GET", url, true);
-        request.responseType = "arraybuffer";
-        request.onload = (e) => {
-            self._context.decodeAudioData(request.response, (buffer) => {
-                self.setSound(name, buffer);
-            });
-        };
-        request.send();
-    }
-}
 // Fluxions WebGL Library
 // Copyright (c) 2017 - 2018 Jonathan Metzgar
 // All Rights Reserved.
@@ -1635,136 +1589,6 @@ class RenderConfig {
             this.uniforms.set(uniform.name, gl.getUniformLocation(this._program, uniform.name));
         }
         return true;
-    }
-}
-// Fluxions WebGL Library
-// Copyright (c) 2017 - 2018 Jonathan Metzgar
-// All Rights Reserved.
-//
-// MIT License
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-// SOFTWARE.
-//
-/// <reference path="./Fluxions.ts" />
-class Camera {
-    constructor() {
-        this._transform = Matrix4.makeIdentity();
-        this._center = new Vector3();
-        this._eye = new Vector3(0.0, 0.0, 10.0);
-        this._angleOfView = 45.0;
-        this._aspectRatio = 1.0;
-        this._znear = 1.0;
-        this._zfar = 100.0;
-        this.projection = Matrix4.makePerspectiveY(this._angleOfView, this._aspectRatio, this._znear, this._zfar);
-        this.pretransform = Matrix4.makeIdentity();
-        this.posttransform = Matrix4.makeIdentity();
-    }
-    get transform() { return Matrix4.multiply3(this.pretransform, this._transform, this.posttransform); }
-    set aspectRatio(ar) {
-        this._aspectRatio = Math.max(0.001, ar);
-        this.projection = Matrix4.makePerspectiveY(this._angleOfView, this._aspectRatio, this._znear, this._zfar);
-    }
-    set angleOfView(angleInDegrees) {
-        this._angleOfView = Math.max(1.0, angleInDegrees);
-        this.projection = Matrix4.makePerspectiveY(this._angleOfView, this._aspectRatio, this._znear, this._zfar);
-    }
-    set zfar(z) {
-        this._zfar = Math.max(z, 0.001);
-        let znear = Math.min(this._znear, this._zfar);
-        let zfar = Math.max(this._znear, this._zfar);
-        this._znear = znear;
-        this._zfar = zfar;
-        this.projection = Matrix4.makePerspectiveY(this._angleOfView, this._aspectRatio, this._znear, this._zfar);
-    }
-    set znear(z) {
-        this._znear = Math.max(z, 0.001);
-        let znear = Math.min(this._znear, this._zfar);
-        let zfar = Math.max(this._znear, this._zfar);
-        this._znear = znear;
-        this._zfar = zfar;
-        this.projection = Matrix4.makePerspectiveY(this._angleOfView, this._aspectRatio, this._znear, this._zfar);
-    }
-    get position() {
-        return this._transform.col3(3);
-    }
-    get right() {
-        return this._transform.col3(0);
-    }
-    get left() {
-        return this._transform.col3(0).neg();
-    }
-    get up() {
-        return this._transform.col3(1);
-    }
-    get down() {
-        return this._transform.col3(1).neg();
-    }
-    get forward() {
-        return this._transform.col3(2);
-    }
-    get backward() {
-        return this._transform.col3(2).neg();
-    }
-    get eye() {
-        return this._transform.asInverse().row3(3);
-    }
-    set eye(p) {
-        this._eye = p.clone();
-        this._transform = Matrix4.makeLookAt(this._eye, this._center, this.up);
-        this._eye = this._transform.col3(3);
-    }
-    set center(p) {
-        this._center = p;
-        this._transform.LookAt(this._eye, this._center, this.up);
-    }
-    moveTo(position) {
-        this._transform.m14 = position.x;
-        this._transform.m24 = position.y;
-        this._transform.m34 = position.z;
-    }
-    move(delta) {
-        let tx = this.right.mul(delta.x);
-        let ty = this.up.mul(delta.y);
-        let tz = this.forward.mul(delta.z);
-        this._transform.Translate(tx.x, tx.y, tx.z);
-        this._transform.Translate(ty.x, ty.y, ty.z);
-        this._transform.Translate(tz.x, tz.y, tz.z);
-        return this.position;
-    }
-    turn(delta) {
-        let m = Matrix4.makeIdentity();
-        m.Rotate(delta.x, 1, 0, 0);
-        m.Rotate(delta.y, 0, 1, 0);
-        m.Rotate(delta.z, 0, 0, 1);
-        this._transform.MultMatrix(m);
-    }
-    setOrbit(azimuthInDegrees, pitchInDegrees, distance) {
-        this._transform.LoadIdentity();
-        this._transform.Rotate(azimuthInDegrees, 0.0, 1.0, 0.0);
-        this._transform.Rotate(pitchInDegrees, 1.0, 0.0, 0.0);
-        this._transform.Translate(0.0, 0.0, -distance);
-        return this._transform.clone();
-    }
-    setLookAt(eye, center, up) {
-        this._transform.LoadIdentity();
-        this._transform.LookAt(eye, center, up);
-        return this._transform.clone();
     }
 }
 // Fluxions WebGL Library
@@ -2198,19 +2022,20 @@ var Colors;
     const GrayIntensity66 = GTE.lerp(DarkIntensity, LightIntensity, 0.33);
     const Gr33Intensity = GTE.lerp(DarkIntensity, LightIntensity, 0.66);
     const Gr66Intensity = GTE.lerp(DarkIntensity, LightIntensity, 0.33);
-    Colors.Black = Vector3.make(30 / 255, 30 / 255, 30 / 255);
-    Colors.White = Vector3.make(210 / 255, 210 / 255, 210 / 255);
-    Colors.Gray66 = Vector3.make(150 / 255, 150 / 255, 150 / 255);
-    Colors.Gray33 = Vector3.make(91 / 255, 91 / 255, 91 / 255);
-    Colors.Red = Vector3.make(210 / 255, 30 / 255, 30 / 255);
-    Colors.Orange = Vector3.make(210 / 255, 150 / 255, 30 / 255);
-    Colors.Yellow = Vector3.make(210 / 255, 210 / 255, 30 / 255);
-    Colors.Green = Vector3.make(30 / 255, 210 / 255, 30 / 255);
-    Colors.Cyan = Vector3.make(30 / 255, 210 / 255, 210 / 255);
-    Colors.Blue = Vector3.make(30 / 255, 30 / 255, 210 / 255);
-    Colors.Indigo = Vector3.make(91 / 255, 30 / 255, 210 / 255);
+    Colors.Black = Vector3.make(0, 0, 0);
+    Colors.White = Vector3.make(1, 1, 1);
+    Colors.Gray66 = Vector3.make(.7, .7, .7);
+    Colors.Gray33 = Vector3.make(.3, .3, .3);
+    Colors.Red = Vector3.make(1, 0, 0);
+    Colors.Orange = Vector3.make(1.0, 0.5, 0.0);
+    Colors.Yellow = Vector3.make(1.0, 1.0, 0.0);
+    Colors.Green = Vector3.make(0.0, 1.0, 0.0);
+    Colors.Cyan = Vector3.make(0.0, 1.0, 1.0);
+    Colors.Blue = Vector3.make(0.0, 0.0, 1.0);
+    Colors.Indigo = Vector3.make(0.5, 0.0, 1.0);
     Colors.Violet = Vector3.make(150 / 255, 30 / 255, 150 / 255);
-    Colors.Magenta = Vector3.make(210 / 255, 30 / 255, 210 / 255);
+    Colors.Magenta = Vector3.make(1.0, 0.0, 1.0);
+    Colors.Rose = Vector3.make(1.0, 0.0, 0.5);
     // export const DarkGreen: Vector3 = Vector3.make(30/255, 91/255, 30/255);
     Colors.Brown = Vector3.make(150 / 255, 91 / 255, 30 / 255);
     Colors.SkyBlue = Vector3.make(30 / 255, 150 / 255, 210 / 255);
@@ -3803,7 +3628,7 @@ class Scenegraph {
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
-/// <reference path="../Hatchetfish.ts" />
+/// <reference path="../misc/Hatchetfish.ts" />
 /// <reference path="../gte/GTE.ts" />
 /// <reference path="RenderingContext.ts" />
 /// <reference path="RenderConfig.ts" />
@@ -3820,6 +3645,567 @@ class Scenegraph {
 /// <reference path="Texture.ts" />
 /// <reference path="ScenegraphNode.ts" />
 /// <reference path="Scenegraph.ts" />
+// Fluxions WebGL Library
+// Copyright (c) 2017 - 2018 Jonathan Metzgar
+// All Rights Reserved.
+//
+// MIT License
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+/// <reference path="./Fluxions.ts" />
+class Camera {
+    constructor() {
+        this._transform = Matrix4.makeIdentity();
+        this._center = new Vector3();
+        this._eye = new Vector3(0.0, 0.0, 10.0);
+        this._angleOfView = 45.0;
+        this._aspectRatio = 1.0;
+        this._znear = 1.0;
+        this._zfar = 100.0;
+        this.projection = Matrix4.makePerspectiveY(this._angleOfView, this._aspectRatio, this._znear, this._zfar);
+        this.pretransform = Matrix4.makeIdentity();
+        this.posttransform = Matrix4.makeIdentity();
+    }
+    get transform() { return Matrix4.multiply3(this.pretransform, this._transform, this.posttransform); }
+    set aspectRatio(ar) {
+        this._aspectRatio = Math.max(0.001, ar);
+        this.projection = Matrix4.makePerspectiveY(this._angleOfView, this._aspectRatio, this._znear, this._zfar);
+    }
+    set angleOfView(angleInDegrees) {
+        this._angleOfView = Math.max(1.0, angleInDegrees);
+        this.projection = Matrix4.makePerspectiveY(this._angleOfView, this._aspectRatio, this._znear, this._zfar);
+    }
+    set zfar(z) {
+        this._zfar = Math.max(z, 0.001);
+        let znear = Math.min(this._znear, this._zfar);
+        let zfar = Math.max(this._znear, this._zfar);
+        this._znear = znear;
+        this._zfar = zfar;
+        this.projection = Matrix4.makePerspectiveY(this._angleOfView, this._aspectRatio, this._znear, this._zfar);
+    }
+    set znear(z) {
+        this._znear = Math.max(z, 0.001);
+        let znear = Math.min(this._znear, this._zfar);
+        let zfar = Math.max(this._znear, this._zfar);
+        this._znear = znear;
+        this._zfar = zfar;
+        this.projection = Matrix4.makePerspectiveY(this._angleOfView, this._aspectRatio, this._znear, this._zfar);
+    }
+    get position() {
+        return this._transform.col3(3);
+    }
+    get right() {
+        return this._transform.col3(0);
+    }
+    get left() {
+        return this._transform.col3(0).neg();
+    }
+    get up() {
+        return this._transform.col3(1);
+    }
+    get down() {
+        return this._transform.col3(1).neg();
+    }
+    get forward() {
+        return this._transform.col3(2);
+    }
+    get backward() {
+        return this._transform.col3(2).neg();
+    }
+    get eye() {
+        return this._transform.asInverse().row3(3);
+    }
+    set eye(p) {
+        this._eye = p.clone();
+        this._transform = Matrix4.makeLookAt(this._eye, this._center, this.up);
+        this._eye = this._transform.col3(3);
+    }
+    set center(p) {
+        this._center = p;
+        this._transform.LookAt(this._eye, this._center, this.up);
+    }
+    moveTo(position) {
+        this._transform.m14 = position.x;
+        this._transform.m24 = position.y;
+        this._transform.m34 = position.z;
+    }
+    move(delta) {
+        let tx = this.right.mul(delta.x);
+        let ty = this.up.mul(delta.y);
+        let tz = this.forward.mul(delta.z);
+        this._transform.Translate(tx.x, tx.y, tx.z);
+        this._transform.Translate(ty.x, ty.y, ty.z);
+        this._transform.Translate(tz.x, tz.y, tz.z);
+        return this.position;
+    }
+    turn(delta) {
+        let m = Matrix4.makeIdentity();
+        m.Rotate(delta.x, 1, 0, 0);
+        m.Rotate(delta.y, 0, 1, 0);
+        m.Rotate(delta.z, 0, 0, 1);
+        this._transform.MultMatrix(m);
+    }
+    setOrbit(azimuthInDegrees, pitchInDegrees, distance) {
+        this._transform.LoadIdentity();
+        this._transform.Rotate(azimuthInDegrees, 0.0, 1.0, 0.0);
+        this._transform.Rotate(pitchInDegrees, 1.0, 0.0, 0.0);
+        this._transform.Translate(0.0, 0.0, -distance);
+        return this._transform.clone();
+    }
+    setLookAt(eye, center, up) {
+        this._transform.LoadIdentity();
+        this._transform.LookAt(eye, center, up);
+        return this._transform.clone();
+    }
+}
+/// <reference path="../gte/GTE.ts" />
+const PLAYER = 0;
+const THINCAMEL = 1;
+const NORMALCAMEL = 2;
+const FATCAMEL = 3;
+const ARROW = 4;
+const RICESACK = 5;
+const RICEBOWL = 6;
+const GRAVESTONE = 7;
+const GEM = 8;
+const RUBY = 9;
+const GOLD = 10;
+const SNOW = 11;
+const BUSH = 12;
+const CACTUS = 13;
+const TREE = 14;
+const PLANT = 15;
+const ROCK = 16;
+const SCORPION = 17;
+const PIRATE = 18;
+const NINJA = 19;
+const TIGER = 20;
+const DOG = 21;
+const EAGLE = 22;
+const SNAKE = 23;
+const MAX_SPRITES = 24;
+const TERRAIN_START = SNOW;
+const TERRAIN_END = ROCK;
+const ENEMY_START = SCORPION;
+const ENEMY_END = SNAKE;
+const MAX_CAMELS = 16;
+const MAX_ENEMIES = 32;
+const MAX_KIBBLES = 128;
+const MAX_TERRAIN = 32;
+const MAX_MISSILES = 4;
+const KIBBLES_PER_EXPLOSION = 16;
+const KIBBLE_SPEED = 64;
+const KIBBLE_GRAVITY = 16;
+const ENEMY_SPEED = 32;
+const MISSILE_SPEED = 512;
+const PLAYER_SPEED = 128;
+function CreateSprites() {
+    let sprites = new Array(MAX_SPRITES);
+    sprites[PLAYER] = [2, 2];
+    sprites[THINCAMEL] = [0, 1];
+    sprites[NORMALCAMEL] = [8, 9];
+    sprites[FATCAMEL] = [16, 17];
+    sprites[GRAVESTONE] = [3, 3];
+    sprites[SCORPION] = [4, 5];
+    sprites[PIRATE] = [6, 6];
+    sprites[NINJA] = [14, 14];
+    sprites[RICESACK] = [7, 7];
+    sprites[RICEBOWL] = [15, 15];
+    sprites[TIGER] = [10, 11];
+    sprites[DOG] = [12, 13];
+    sprites[EAGLE] = [24, 25];
+    sprites[SNAKE] = [18, 19];
+    sprites[ARROW] = [20, 20];
+    sprites[GEM] = [21, 21];
+    sprites[RUBY] = [22, 22];
+    sprites[GOLD] = [23, 23];
+    sprites[SNOW] = [26, 26];
+    sprites[BUSH] = [27, 27];
+    sprites[CACTUS] = [28, 28];
+    sprites[TREE] = [29, 29];
+    sprites[PLANT] = [30, 30];
+    sprites[ROCK] = [31, 31];
+    return sprites;
+}
+/// <reference path="./Common.ts" />
+class ActionGame {
+    constructor(XOR) {
+        this.XOR = XOR;
+        this.camels = new Array(MAX_CAMELS);
+        this.player = new Sprite(PLAYER);
+        this.enemies = new Array(MAX_ENEMIES);
+        this.kibbles = new Array(MAX_KIBBLES);
+        this.terrain = new Array(MAX_TERRAIN);
+        this.missiles = new Array(MAX_MISSILES);
+        this.lastKibble = Vector3.make(0, 0, 0);
+        this.animframe = 0;
+        this.numCamels = 0;
+        this.numEnemies = 0;
+        this.score = 0;
+        this.camelLocation = Vector3.make(64, 256, 0);
+        this.playerLocation = Vector3.make(64, 256, 0);
+        this.playerField = Vector2.make(64, 192);
+        this.init();
+    }
+    init() {
+        this.score = 0;
+        this.numCamels = 0;
+        this.numEnemies = 0;
+        this.animframe = 0;
+        this.sprites = CreateSprites();
+        this.player = new Sprite(this.sprites[PLAYER][0]);
+        this.player.position.reset(64 + GTE.rand1() * this.playerField.x, this.XOR.height / 2 + GTE.rand1() * this.playerField.y);
+        for (let i = 0; i < MAX_CAMELS; i++) {
+            this.camels[i] = new Sprite(0);
+            this.camels[i].alive = GTE.random(1, 5) | 0;
+            this.numCamels++;
+            this.camels[i].position.x = this.camelLocation.x + GTE.random(-32, 32);
+            this.camels[i].position.y = this.camelLocation.y + GTE.random(-128, 128);
+        }
+        for (let i = 0; i < MAX_ENEMIES; i++) {
+            this.enemies[i] = new Sprite(0);
+            this.enemies[i].type = GTE.random(ENEMY_START, ENEMY_END) | 0;
+            this.enemies[i].alive = 0;
+            this.enemies[i].position.x = GTE.random(this.XOR.width, 2 * this.XOR.width);
+            this.enemies[i].position.y = GTE.random(0, this.XOR.height - 32);
+            this.numEnemies++;
+        }
+        for (let i = 0; i < MAX_KIBBLES; i++) {
+            this.kibbles[i] = new Sprite(31);
+        }
+        for (let i = 0; i < MAX_MISSILES; i++) {
+            this.missiles[i] = new Sprite(20);
+            this.missiles[i].alive = 0;
+            this.missiles[i].velocity.reset(PLAYER_SPEED * 4, 0);
+        }
+    }
+    get lost() {
+        if (this.player.alive <= 0)
+            return true;
+        if (this.numCamels <= 0)
+            return true;
+        return false;
+    }
+    get won() {
+        if (this.player.alive <= 0)
+            return false;
+        if (this.numCamels <= 0)
+            return false;
+        if (this.numEnemies > 0)
+            return false;
+        return true;
+    }
+    startKibbles(x, y) {
+        this.lastKibble.x = x;
+        this.lastKibble.y = y;
+        for (let num = 0; num < KIBBLES_PER_EXPLOSION; num++) {
+            let i = (GTE.rand01() * MAX_KIBBLES) | 0;
+            this.kibbles[i].alive = 1;
+            this.kibbles[i].position.reset(x, y);
+            this.kibbles[i].refpoint.reset(x, y);
+            this.kibbles[i].velocity.reset(GTE.random(-KIBBLE_SPEED / 2, KIBBLE_SPEED / 2), -GTE.random(KIBBLE_SPEED, KIBBLE_SPEED * 2));
+            this.kibbles[i].timealive = this.XOR.t1;
+        }
+    }
+    startMissile(x, y, dir) {
+        let alive = this.XOR.t1;
+        let best = 0;
+        for (let i = 0; i < this.missiles.length; i++) {
+            let missile = this.missiles[i];
+            if (missile.alive <= 0) {
+                best = i;
+                break;
+            }
+            if (alive > missile.timealive) {
+                best = i;
+                alive = missile.timealive;
+            }
+        }
+        let missile = this.missiles[best];
+        missile.position.reset(x, y);
+        let v = dir.norm().mul(MISSILE_SPEED);
+        missile.velocity.reset(v.x, v.y);
+        missile.alive = 1;
+    }
+    update() {
+        let t1 = this.XOR.t1 * 3.14159;
+        this.animframe = Math.sin(t1) > 0.0 ? 1 : 0;
+        this.updateCamels(t1);
+        this.updateEnemies(t1);
+        this.updatePlayer(t1);
+        this.updateKibbles(t1);
+        this.updateMissiles(t1);
+    }
+    updatePlayer(t1) {
+        let dx = this.XOR.Input.getkey2(KEY_LEFT, KEY_RIGHT);
+        let dy = this.XOR.Input.getkey2(KEY_UP, KEY_DOWN);
+        let dir = Vector2.makeUnit(dx, dy);
+        this.player.velocity.x = dir.x;
+        this.player.velocity.y = dir.y;
+        this.player.velocity = this.player.velocity.norm().mul(PLAYER_SPEED * this.XOR.dt);
+        this.player.position = this.player.position.add(this.player.velocity);
+        for (let i = 0; i < this.enemies.length; i++) {
+            let enemy = this.enemies[i];
+            if (this.player.collides(enemy, 32)) {
+                this.startKibbles(this.player.x, this.player.y);
+                this.player.alive--;
+                this.player.position.x = this.XOR.width / 4 + GTE.rand1() * this.playerField.x;
+                this.player.position.y = this.XOR.height / 2 + GTE.rand1() * this.playerField.y;
+            }
+        }
+        let XOR = this.XOR;
+        if (XOR.Timers.ended("PLAYERSHOOT")) {
+            if (XOR.Input.getkey(KEY_START) || XOR.Input.getkey(KEY_SELECT)) {
+                XOR.Timers.start("PLAYERSHOOT", 0.1);
+                XOR.Sounds.playSound("SNARE");
+                this.startMissile(this.player.x, this.player.y, Vector2.make(1, 0));
+            }
+        }
+    }
+    updateCamels(t1) {
+        for (let i = 0; i < MAX_CAMELS; i++) {
+            let camel = this.camels[i];
+            if (this.camels[i].alive > 0) {
+                let type = NORMALCAMEL;
+                if (this.camels[i].alive == 1)
+                    type = THINCAMEL;
+                if (this.camels[i].alive == 2)
+                    type = NORMALCAMEL;
+                if (this.camels[i].alive >= 3)
+                    type = FATCAMEL;
+                let animframe = Math.sin(this.camels[i].random + t1) > 0 ? 1 : 0;
+                this.camels[i].index = this.sprites[type][animframe];
+                this.camels[i].offset.x = GTE.oscillateBetween(t1, this.camels[i].random, i, -2.0, 2.0);
+                this.camels[i].offset.y = GTE.oscillateBetween(t1, 2 * this.camels[i].random, i, -2.0, 2.0);
+                for (let j = 0; j < MAX_ENEMIES; j++) {
+                    let enemy = this.enemies[j];
+                    if (enemy.alive <= 0)
+                        continue;
+                    if (enemy.collides(camel, 24)) {
+                        camel.alive--;
+                        if (camel.alive <= 0) {
+                            this.numCamels--;
+                            this.startKibbles(camel.x, camel.y);
+                        }
+                        enemy.alive--;
+                        if (enemy.alive <= 0) {
+                            this.startKibbles(enemy.x, enemy.y);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    updateEnemies(t1) {
+        for (let i = 0; i < MAX_ENEMIES; i++) {
+            let enemy = this.enemies[i];
+            if (enemy.position.x < -32) {
+                enemy.alive = 0;
+            }
+            if (enemy.alive > 0) {
+                let random = enemy.random;
+                let type = enemy.type;
+                let animframe = Math.sin(random + t1) > 0 ? 1 : 0;
+                enemy.index = this.sprites[type][animframe];
+                enemy.offset.x = GTE.oscillateBetween(t1, random, i, -2.0, 2.0);
+                enemy.offset.y = GTE.oscillateBetween(t1, 2 * random, i, -2.0, 2.0);
+                enemy.position = enemy.position.add(enemy.velocity.mul(this.XOR.dt));
+            }
+            else {
+                enemy.alive = 1;
+                enemy.position.x = GTE.random(this.XOR.width, 2 * this.XOR.width);
+                enemy.position.y = GTE.random(0, this.XOR.height - 32);
+                let randomEnemySpeed = GTE.random(ENEMY_SPEED, 2 * ENEMY_SPEED);
+                enemy.velocity.x = -randomEnemySpeed;
+                enemy.velocity.y = GTE.random(-2, 2);
+                if (GTE.rand01() < 0.5) {
+                    let randomCamelIndex = GTE.random(0, this.camels.length) | 0;
+                    let camel = this.camels[randomCamelIndex];
+                    enemy.velocity = enemy.dirto(camel).norm().mul(ENEMY_SPEED);
+                }
+            }
+            for (let j = i + 1; j < MAX_ENEMIES; j++) {
+                if (i == j)
+                    continue;
+                let dirto = enemy.dirto(this.enemies[j]);
+                if (dirto.length() < 32) {
+                    let ndirto = dirto.norm().mul(16.5);
+                    let middle = enemy.position.add(this.enemies[j].position).mul(0.5);
+                    enemy.position = middle.add(ndirto);
+                    this.enemies[j].position = middle.sub(ndirto);
+                }
+            }
+        }
+    }
+    updateKibbles(t1) {
+        for (let i = 0; i < MAX_KIBBLES; i++) {
+            let k = this.kibbles[i];
+            if (k.position.y > k.refpoint.y + 4) {
+                k.alive = 0;
+            }
+            if (k.alive) {
+                k.velocity.y += KIBBLE_GRAVITY * 9.8 * this.XOR.dt;
+                k.position.x += k.velocity.x * this.XOR.dt;
+                k.position.y += k.velocity.y * this.XOR.dt;
+            }
+        }
+    }
+    updateMissiles(t1) {
+        for (let i = 0; i < this.missiles.length; i++) {
+            let missile = this.missiles[i];
+            if (missile.x > this.XOR.width * 1.5) {
+                missile.alive = 0;
+            }
+            if (missile.alive > 0) {
+                missile.move(this.XOR.dt);
+                missile.offset.y = GTE.oscillate(missile.random + t1, 1, 0, 3, 0);
+                for (let j = 0; j < this.enemies.length; j++) {
+                    let enemy = this.enemies[j];
+                    if (enemy.alive && enemy.collides(missile, 16)) {
+                        this.numEnemies--;
+                        missile.alive = 0;
+                        enemy.alive = 0;
+                        this.score += 100;
+                        this.startKibbles(enemy.x, enemy.y);
+                    }
+                }
+            }
+        }
+    }
+    draw(g) {
+        for (let i = 0; i < MAX_CAMELS; i++) {
+            if (this.camels[i].alive > 0) {
+                g.drawSprite(this.camels[i].index, this.camels[i].position.x + this.camels[i].offset.x, this.camels[i].position.y + this.camels[i].offset.y);
+            }
+        }
+        for (let i = 0; i < MAX_ENEMIES; i++) {
+            if (this.enemies[i].alive) {
+                g.drawSprite(this.enemies[i].index, this.enemies[i].position.x + this.enemies[i].offset.x, this.enemies[i].position.y + this.enemies[i].offset.y);
+            }
+        }
+        g.drawSprite(this.player.index, this.player.position.x + this.player.offset.x, this.player.position.y + this.player.offset.y);
+        for (let i = 0; i < MAX_MISSILES; i++) {
+            let missile = this.missiles[i];
+            if (missile.alive) {
+                g.drawSprite(missile.index, missile.x, missile.y);
+            }
+        }
+        for (let i = 0; i < MAX_KIBBLES; i++) {
+            let k = this.kibbles[i];
+            if (k.alive) {
+                //g.drawSprite(this.kibbles[i].index, this.kibbles[i].position.x, this.kibbles[i].position.y);
+                g.drawBox(k.position.x, k.position.y, 'black');
+            }
+        }
+    }
+    draw2doverlay(g) {
+        g.putTextAligned("Camels: " + this.numCamels, 'white', 1, -1, 0, 0);
+        g.putTextAligned("Enemies: " + this.numEnemies, 'white', -1, 1, 0, 0);
+        g.putTextAligned("Score " + this.score, 'white', 0, -1, 0, 0);
+        g.putTextAligned("Lives: " + this.player.alive, 'white', 1, 1, 0, 0);
+    }
+}
+class AdventureGame {
+    constructor(XOR) {
+        this.XOR = XOR;
+        this.sprites = CreateSprites();
+    }
+    update() {
+        let t1 = this.XOR.t1;
+    }
+    draw(g) {
+    }
+    draw2doverlay(g) {
+    }
+}
+// Toadfish Library
+// Copyright (c) 2017 - 2018 Jonathan Metzgar
+// All Rights Reserved.
+//
+// MIT License
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+/// <reference path="./gte/GTE.ts" />
+class Toadfish {
+    constructor() {
+        this._sounds = new Map();
+        this._buffers = [];
+        this._curbuffer = 0;
+        this._context = new AudioContext();
+        if (!this._context) {
+            throw "Unable to use Web Audio API";
+        }
+        this._soundVolume = this._context.createGain();
+    }
+    setSound(name, ab) {
+        this._sounds.set(name, ab);
+    }
+    setVolume(amount) {
+        this._soundVolume.gain.value = GTE.clamp(amount, 0, 1);
+    }
+    playSound(name) {
+        let sfx = this._sounds.get(name);
+        if (!sfx)
+            return;
+        // if (this._buffers.length < 32) {
+        //     this._buffers.push(this._context.createBufferSource())
+        //     this._curbuffer = this._buffers.length - 1;
+        // }
+        // else {
+        //     this._curbuffer = (this._curbuffer + 1) % 32;
+        // }
+        let source = this._context.createBufferSource(); //this._buffers[this._curbuffer];
+        source.buffer = sfx;
+        source.connect(this._context.destination);
+        source.start(0);
+    }
+    queueSound(name, url) {
+        let self = this;
+        let request = new XMLHttpRequest();
+        request.open("GET", url, true);
+        request.responseType = "arraybuffer";
+        request.onload = (e) => {
+            self._context.decodeAudioData(request.response, (buffer) => {
+                self.setSound(name, buffer);
+            });
+        };
+        request.send();
+    }
+}
 // LibXOR Library
 // Copyright (c) 2017 - 2018 Jonathan Metzgar
 // All Rights Reserved.
@@ -3848,21 +4234,24 @@ class Scenegraph {
 class Sprite {
     constructor(index) {
         this.index = 0;
-        this.x = 0;
-        this.y = 0;
+        this.animframe = 0;
         this.enabled = false;
         this.alive = 1;
+        this.type = 0; // used for classifying the main sprite
         this.active = false;
         this.index = index | 0;
         this.position = Vector2.make(0, 0);
         this.offset = Vector2.make(0, 0);
         this.velocity = Vector2.make(0, 0);
+        this.refpoint = Vector2.make(0, 0);
         this.random = Math.random();
         this.timealive = 0.0;
         this.enabled = true;
         this.alive = 1;
         this.active = true;
     }
+    get x() { return this.position.x + this.offset.x; }
+    get y() { return this.position.y + this.offset.y; }
     reset(x, y) {
         this.position.x = x;
         this.position.y = y;
@@ -3870,20 +4259,47 @@ class Sprite {
         this.offset.y = 0;
         this.velocity.x = 0;
         this.velocity.y = 0;
+        this.refpoint.x = 0;
+        this.refpoint.y = 0;
     }
     update(dt) {
         this.offset.x += this.velocity.x * dt;
         this.offset.y += this.velocity.y * dt;
     }
+    move(dt) {
+        this.position.x += this.velocity.x * dt;
+        this.position.y += this.velocity.y * dt;
+    }
+    dirto(sprite) {
+        return Sprite.DirTo(this, sprite);
+    }
+    distance(sprite) {
+        return Sprite.Distance(this, sprite);
+    }
+    collides(sprite, d) {
+        return Sprite.Collide(this, sprite, d);
+    }
     static Distance(sprite1, sprite2) {
         if (!sprite1 || !sprite2)
             return 1e6;
-        let dx = (sprite1.x + sprite1.offset.x) - (sprite2.x + sprite2.offset.x);
-        let dy = (sprite1.y + sprite1.offset.y) - (sprite2.y + sprite2.offset.y);
-        return Math.sqrt(dx * dx + dy * dy);
+        let dx = (sprite1.position.x + sprite1.offset.x) - (sprite2.position.x + sprite2.offset.x);
+        let dy = (sprite1.position.y + sprite1.offset.y) - (sprite2.position.y + sprite2.offset.y);
+        let d = Math.sqrt(dx * dx + dy * dy);
+        return d;
     }
     static Collide(sprite1, sprite2, d) {
+        if (Math.abs(sprite1.x - sprite2.x) > d)
+            return false;
+        if (Math.abs(sprite1.y - sprite2.y) > d)
+            return false;
         return Sprite.Distance(sprite1, sprite2) < d ? true : false;
+    }
+    static DirTo(sprite1, sprite2) {
+        if (!sprite1 || !sprite2)
+            return Vector2.make(0, 0);
+        let dx = (sprite1.position.x + sprite1.offset.x) - (sprite2.position.x + sprite2.offset.x);
+        let dy = (sprite1.position.y + sprite1.offset.y) - (sprite2.position.y + sprite2.offset.y);
+        return Vector2.make(-dx, -dy);
     }
 }
 // LibXOR Library
@@ -3929,6 +4345,7 @@ class GraphicsComponent {
         this._layers = 1;
         this._layerstride = 1;
         this._stride = 1;
+        this.spriteCoords = [];
         let e = document.getElementById('graphicsdiv');
         if (!e) {
             this.divElement_ = document.createElement('div');
@@ -3956,6 +4373,7 @@ class GraphicsComponent {
         this.context = ctx2d;
         this.context.imageSmoothingEnabled = false;
         this.canvasElement_.setAttribute('cssText', "image-rendering: pixelated;");
+        //this.context.globalCompositeOperation = "source-in";
         this.OAM = [];
         this.sprites = new Image();
         this.setFont('Salsbury,EssentialPragmataPro', 32);
@@ -4070,11 +4488,14 @@ class GraphicsComponent {
             for (let x = 0; x < this.sprites.width; x += 8) {
                 let src = ctx.getImageData(x, y, 8, 8);
                 let dst = this.resize(src, 32, 32);
-                // let image = createImageBitmap(dst).then((value) => {
-                //     self.spriteImages[i] = value;
-                // });
                 this.spriteImages[i] = dst;
                 i++;
+            }
+        }
+        this.spriteCoords.length = cols * rows;
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                this.spriteCoords[y * cols + x] = [x * 8, y * 8];
             }
         }
     }
@@ -4112,7 +4533,7 @@ class GraphicsComponent {
         this.setText(color, halign);
         this.putText(text, x, y);
     }
-    drawSprite(index, x, y) {
+    putSprite(index, x, y) {
         let g = this.context;
         let cols = (this.sprites.width / 8) | 0;
         let sx = index % cols;
@@ -4123,11 +4544,22 @@ class GraphicsComponent {
         // }
         //g.drawImage(this.sprites, sx * 8, sy * 8, 8, 8, x, y, 32, 32);
     }
+    drawSprite(index, x, y) {
+        let g = this.context;
+        let sx = this.spriteCoords[index][0];
+        let sy = this.spriteCoords[index][1];
+        g.drawImage(this.sprites, sx, sy, 8, 8, x - 16, y - 16, 32, 32);
+    }
     drawSprites() {
         for (let sprite of this.OAM) {
             if (sprite.enabled)
-                this.drawSprite(sprite.index, sprite.x + sprite.offset.x, sprite.y + sprite.offset.y);
+                this.drawSprite(sprite.index, sprite.position.x + sprite.offset.x, sprite.position.y + sprite.offset.y);
         }
+    }
+    drawBox(x, y, color) {
+        let g = this.context;
+        g.fillStyle = color || 'black';
+        g.fillRect(x - 2, y - 2, 4, 4);
     }
     get canvas() {
         return this.canvasElement_;
@@ -4288,6 +4720,14 @@ class InputComponent {
         if (this.buttons & mask)
             return true;
         return false;
+    }
+    getkey2(negwhich, poswhich) {
+        let dx = 0;
+        if (this.getkey(negwhich))
+            dx -= 1;
+        if (this.getkey(poswhich))
+            dx += 1;
+        return dx;
     }
     onkeychange(e, state) {
         let oldbuttons = this.buttons;
@@ -4545,8 +4985,8 @@ class TimerComponent {
 // SOFTWARE.
 //
 /// <reference path="../gte/GTE.ts" />
-/// <reference path="../Hatchetfish.ts" />
-/// <reference path="../Toadfish.ts" />
+/// <reference path="../misc/Hatchetfish.ts" />
+/// <reference path="../misc/Toadfish.ts" />
 /// <reference path="../fluxions/Fluxions.ts" />
 /// <reference path="Graphics.ts" />
 /// <reference path="Input.ts" />
@@ -4610,7 +5050,8 @@ class State {
     }
 }
 class StateMachine {
-    constructor() {
+    constructor(XOR) {
+        this.XOR = XOR;
         this.states = [];
         this._t1 = 0;
     }
@@ -4619,12 +5060,19 @@ class StateMachine {
         let topTime = this.topTime;
         if (topTime > 0 && topTime < tInSeconds) {
             this.pop();
+            this.XOR.Sounds.playSound(this.topSound);
         }
     }
     push(name, alt, delayTime) {
         if (delayTime > 0)
             delayTime += this._t1;
         this.states.push(new State(name, alt, delayTime));
+    }
+    pushwithsound(name, alt, delayTime, sound, music) {
+        if (delayTime > 0)
+            delayTime += this._t1;
+        this.states.push(new State(name, alt, delayTime, sound, music));
+        this.push(name, "PAUSE", 0.01);
     }
     pop() {
         if (this.states.length)
@@ -4651,21 +5099,44 @@ class StateMachine {
         }
         return -1;
     }
+    get topSound() {
+        let l = this.states.length;
+        if (l > 0) {
+            return this.states[l - 1].queueSound;
+        }
+        return "NONE";
+    }
+    get topMusic() {
+        let l = this.states.length;
+        if (l > 0) {
+            return this.states[l - 1].queueMusic;
+        }
+        return "NONE";
+    }
 }
-/// <reference path="./gte/GTE.ts" />
-/// <reference path="./libxor/LibXOR.ts" />
-/// <reference path="./libxor/State.ts" />
+/// <reference path="../gte/GTE.ts" />
+/// <reference path="../libxor/LibXOR.ts" />
+/// <reference path="../libxor/State.ts" />
+/// <reference path="Common.ts" />
+/// <reference path="AdventureGame.ts" />
+/// <reference path="ActionGame.ts" />
 class Game {
     constructor() {
         this.series = "#LDJAM 41";
-        this.title = "UNKNOWN GAME";
+        this.title = "Marco Polo";
         this.author = "by microwerx";
         this.askToQuit = false;
         this.gameover = true;
         this.gamelevel = 1;
         this.score = 0;
-        this.states = new StateMachine();
+        this.levelColors = [
+            ["#ffbf3f", '#ff3f3f'],
+        ];
+        this.currentEnvironmentColor = 'lightbrown';
         this.XOR = new LibXOR(640, 512);
+        this.states = new StateMachine(this.XOR);
+        this.actionGame = new ActionGame(this.XOR);
+        this.adventureGame = new AdventureGame(this.XOR);
         this.gameover = true;
         this.gamelevel = 1;
         this.score = 0;
@@ -4699,7 +5170,7 @@ class Game {
     load() {
         let XOR = this.XOR;
         let g = XOR.Graphics;
-        g.loadSprites("assets/images/sprites.png?" + Date.now());
+        g.loadSprites("assets/images/marcopolo.png?" + Date.now());
         XOR.Sounds.queueSound('hihat', 'assets/sounds/E12HIHAT.wav');
         XOR.Sounds.queueSound('kick', 'assets/sounds/E12KICK.wav');
         XOR.Sounds.queueSound('kickaccent', 'assets/sounds/E12KICKACCENT.wav');
@@ -4708,8 +5179,8 @@ class Game {
         g.resizeTiles(64, 64, 4);
         if (XOR.Scenegraph) {
             let sg = XOR.Scenegraph;
-            sg.AddRenderConfig("default", "assets/shaders/default.vert", "assets/shaders/default.frag");
-            sg.Load("assets/test.scn");
+            //sg.AddRenderConfig("default", "assets/shaders/default.vert", "assets/shaders/default.frag");
+            //sg.Load("assets/test.scn");
         }
         this.states.push("MAINMENU", "", 0);
         this.states.push("MAINMENU", "PAUSE", 0.25);
@@ -4722,10 +5193,13 @@ class Game {
         }
         this.gamelevel = which;
         this.states.push("MAINMENU", "", 0);
-        this.states.push("GAMEMODE", "", 0);
-        this.states.push("GO", "PAUSE", 6);
-        this.states.push("SET", "PAUSE", 4);
-        this.states.push("READY", "PAUSE", 2);
+        this.states.push("ACTIONGAME", "INIT", 0);
+    }
+    readySetGo() {
+        let name = this.states.topName;
+        this.states.pushwithsound(name, "GO", 3, "snare", "");
+        this.states.pushwithsound(name, "SET", 2, "snare", "");
+        this.states.pushwithsound(name, "READY", 1, "snare", "");
     }
     statePause() {
         if (this.states.topAlt == "PAUSE")
@@ -4748,9 +5222,9 @@ class Game {
     }
     checkGameModeAskToQuit() {
         let XOR = this.XOR;
-        if (this.states.topName == "GAMEMODE") {
+        if (this.states.topAlt == "PLAY") {
             if (XOR.Input.getkey(KEY_BACK)) {
-                this.states.push("ASKTOQUIT", "", 0);
+                this.states.push("ASKTOQUIT", "INIT", 0);
                 this.states.push("ASKTOQUIT", "PAUSE", 0.5);
                 return true;
             }
@@ -4790,25 +5264,7 @@ class Game {
         let g = this.XOR.Graphics;
         this.states.update(tInSeconds);
         XOR.update(tInSeconds);
-        if (this.XOR.Scenegraph) {
-            let sg = this.XOR.Scenegraph;
-            let b1 = sg.GetNode("test.scn", "bunny");
-            let b2 = sg.GetNode("test.scn", "bunny2");
-            b1.geometryGroup = "bunny.obj";
-            b2.geometryGroup = "bunny.obj";
-            let mouse = XOR.Input.lastClick;
-            b1.posttransform = Matrix4.makeTranslation(mouse.x / 320 - 1, -mouse.y / 256 + 1 + GTE.oscillateBetween(XOR.t1, 0.5, 0.0, -0.5, 0.5), 0.0);
-            let dirto = b2.dirto(b1).norm().mul(0.1 * XOR.dt);
-            b2.posttransform.Translate(dirto.x, dirto.y, dirto.z);
-            let d = sg.GetNode("test.scn", "dragon");
-            dirto = XOR.Input.gamepadStick2.mul(XOR.dt);
-            let xangle = -XOR.Input.gamepadStick1.x * XOR.dt * 30;
-            let yangle = -XOR.Input.gamepadStick1.y * XOR.dt * 30;
-            let col3 = d.posttransform.col3(3);
-            d.posttransform.Translate(dirto.y, 0, -dirto.x);
-            d.posttransform.Rotate(xangle, 0, 1, 0);
-            d.posttransform.Rotate(yangle, 0, 0, 1);
-        }
+        this.actionGame.playerLocation.copy(XOR.Input.lastClick);
         if (this.statePause())
             return;
         if (this.stateMainMenu())
@@ -4834,6 +5290,39 @@ class Game {
         if (this.getTimeredKey(KEY_RIGHT)) {
             XOR.Sounds.playSound('kickaccent');
         }
+        if (this.stateActionGame() && this.states.topAlt == "PLAY") {
+            if (this.actionGame.lost) {
+                this.states.pop();
+                this.states.push("ACTIONGAME", "INIT", 0);
+                this.states.push("ACTIONGAME", "LOST", 4);
+            }
+            else if (this.actionGame.won) {
+                this.states.pop();
+                this.states.push("ACTIONGAME", "INIT", 0);
+                this.states.push("ACTIONGAME", "WON", 4);
+            }
+            this.actionGame.update();
+            return;
+        }
+        if (this.stateAdventureGame())
+            return;
+    }
+    stateActionGame() {
+        if (this.states.topName != "ACTIONGAME")
+            return false;
+        if (this.states.topAlt == "INIT") {
+            this.actionGame.init();
+            this.states.pop();
+            this.states.push("ACTIONGAME", "PLAY", 0);
+            this.readySetGo();
+        }
+        return true;
+    }
+    stateAdventureGame() {
+        if (this.states.topName != "ADVENTUREGAME")
+            return false;
+        this.adventureGame.update();
+        return true;
     }
     display() {
         let XOR = this.XOR;
@@ -4848,38 +5337,38 @@ class Game {
             g.putTextAligned('Loading', 'white', 0, 0, 0, 0);
         }
         else {
-            this.draw3d();
-            g.clearScreen();
+            //this.draw3d();
+            let gradient = g.context.createLinearGradient(0, 0, 0, XOR.height);
+            gradient.addColorStop(0, this.levelColors[0][0]);
+            gradient.addColorStop(1, this.levelColors[0][1]);
+            g.clearScreen(gradient);
             this.draw2d();
             this.draw2doverlay();
         }
     }
     draw3d() {
-        let XOR = this.XOR;
-        let sg = XOR.Scenegraph;
-        let gl = XOR.Fluxions.gl;
-        gl.clearColor(0.2, 0.3 * GTE.oscillate(XOR.t1, 0.5, 0.0, 0.3, 0.0), 0.4, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        let rc = sg.UseRenderConfig("default");
-        if (rc) {
-            sg.sunlight.setOrbit(45, 45, 10);
-            sg.camera.angleOfView = 45;
-            sg.camera.setLookAt(Vector3.make(0, 0, 5), Vector3.make(0, 0, 0), Vector3.make(0, 1, 0));
-            sg.SetGlobalParameters(rc);
-            sg.RenderScene(rc, "");
-        }
     }
     draw2d() {
         let g = this.XOR.Graphics;
-        g.drawTiles();
-        g.drawSprites();
+        //g.drawTiles();
+        //g.drawSprites();
+        if (this.states.topName == "ACTIONGAME") {
+            this.actionGame.draw(g);
+        }
+        if (this.states.topName == "ADVENTUREGAME") {
+            this.adventureGame.draw(g);
+        }
     }
     draw2doverlay() {
         let g = this.XOR.Graphics;
         g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
-        g.putTextAligned(this.states.topAlt, 'white', 1, -1, 0, 0);
+        g.putTextAligned(this.states.topAlt, 'white', -1, -1, 0, 32);
+        g.putTextAligned("Time: " + Math.ceil(this.XOR.t1 - this.states.topTime), 'white', -1, -1, 0, 64);
         if (this.states.topName == "MAINMENU") {
+            let font = g.context.font;
+            g.context.font = "64px Salsbury,EssentialPragmataPro,sans-serif";
             g.putTextAligned(this.title, 'white', 0, 0, 0, -g.height / 5);
+            g.context.font = font;
             g.putTextAligned('Press START!', 'red', 0, 0, 0, 0);
         }
         else {
@@ -4890,14 +5379,26 @@ class Game {
             g.putTextAligned("ESCAPE = NO", 'white', 0, 0, 0, g.fontHeight * 2);
             g.putTextAligned("ENTER = YES", "white", 0, 0, 0, g.fontHeight * 3);
         }
-        if (this.states.topName == "READY") {
-            g.putTextAligned('READY!', 'red', -1, 1, 0, 0);
+        if (this.states.topAlt == "READY") {
+            g.putTextAligned('READY!', 'red', 0, 0, 0, 0);
         }
-        if (this.states.topName == "SET") {
-            g.putTextAligned('SET!', 'yellow', 0, 1, 0, 0);
+        if (this.states.topAlt == "SET") {
+            g.putTextAligned('SET!', 'yellow', 0, 0, 0, 0);
         }
-        if (this.states.topName == "GO") {
-            g.putTextAligned('GO!!!', 'green', 1, 1, 0, 0);
+        if (this.states.topAlt == "GO") {
+            g.putTextAligned('GO!!!', 'green', 0, 0, 0, 0);
+        }
+        if (this.states.topName == "ACTIONGAME") {
+            this.actionGame.draw2doverlay(g);
+            if (this.states.topAlt == "WON") {
+                g.putTextAligned("YOU WON THIS ROUND!!!", 'red', 0, 0, 0, 0);
+            }
+            if (this.states.topAlt == "LOST") {
+                g.putTextAligned("YOU LOST THIS ROUND!!!", 'red', 0, 0, 0, 0);
+            }
+        }
+        if (this.states.topName == "ADVENTUREGAME") {
+            this.adventureGame.draw2doverlay(g);
         }
     }
     setInstructions() {

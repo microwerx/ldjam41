@@ -23,8 +23,8 @@
 // SOFTWARE.
 //
 /// <reference path="../gte/GTE.ts" />
-/// <reference path="../Hatchetfish.ts" />
-/// <reference path="../Toadfish.ts" />
+/// <reference path="../misc/Hatchetfish.ts" />
+/// <reference path="../misc/Toadfish.ts" />
 /// <reference path="../fluxions/Fluxions.ts" />
 /// <reference path="Graphics.ts" />
 /// <reference path="Input.ts" />

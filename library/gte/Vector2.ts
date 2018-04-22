@@ -121,6 +121,13 @@ class Vector2 {
         return new Vector2(x, y);
     }
 
+    static makeUnit(x: number, y: number): Vector2 {
+        let lengthSquared = x * x + y * y;
+        if (lengthSquared == 0.0) return new Vector2(0, 0);
+        let length = Math.sqrt(lengthSquared);
+        return new Vector2(x / length, y / length);
+    }
+
     static dot(v1: Vector2, v2: Vector2): number {
         return v1.x * v2.x + v1.y * v2.y;
     }

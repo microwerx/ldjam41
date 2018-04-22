@@ -157,6 +157,13 @@ class InputComponent {
         return false;
     }
 
+    getkey2(negwhich: number, poswhich: number): number {
+        let dx = 0;
+        if (this.getkey(negwhich)) dx -= 1;
+        if (this.getkey(poswhich)) dx += 1;
+        return dx;
+    }
+
     onkeychange(e: KeyboardEvent, state: boolean) {
         let oldbuttons = this.buttons;
         switch (e.key) {

@@ -1,22 +1,38 @@
-/// <reference path="./gte/GTE.ts" />
-/// <reference path="./libxor/LibXOR.ts" />
-/// <reference path="./libxor/State.ts" />
+/// <reference path="../gte/GTE.ts" />
+/// <reference path="../libxor/LibXOR.ts" />
+/// <reference path="../libxor/State.ts" />
+/// <reference path="Common.ts" />
+/// <reference path="AdventureGame.ts" />
+/// <reference path="ActionGame.ts" />
+
 
 class Game {
     XOR: LibXOR;
+    actionGame: ActionGame;
+    adventureGame: AdventureGame;
 
     series: string = "#LDJAM 41";
-    title: string = "UNKNOWN GAME";
+    title: string = "Marco Polo";
     author: string = "by microwerx";
 
     askToQuit: boolean = false;
     gameover: boolean = true;
     gamelevel: number = 1;
     score: number = 0;
-    states: StateMachine = new StateMachine();
+    states: StateMachine;
+
+    levelColors: [string, string][] = [
+        ["#ffbf3f", '#ff3f3f'],
+    ];
+    currentEnvironmentColor: string = 'lightbrown';
 
     constructor() {
         this.XOR = new LibXOR(640, 512);
+        this.states = new StateMachine(this.XOR);
+
+        this.actionGame = new ActionGame(this.XOR);
+        this.adventureGame = new AdventureGame(this.XOR);
+
         this.gameover = true;
         this.gamelevel = 1;
         this.score = 0;
@@ -60,7 +76,7 @@ class Game {
     load() {
         let XOR = this.XOR;
         let g = XOR.Graphics;
-        g.loadSprites("assets/images/sprites.png?" + Date.now());
+        g.loadSprites("assets/images/marcopolo.png?" + Date.now());
 
         XOR.Sounds.queueSound('hihat', 'assets/sounds/E12HIHAT.wav');
         XOR.Sounds.queueSound('kick', 'assets/sounds/E12KICK.wav');
@@ -72,8 +88,8 @@ class Game {
 
         if (XOR.Scenegraph) {
             let sg = XOR.Scenegraph;
-            sg.AddRenderConfig("default", "assets/shaders/default.vert", "assets/shaders/default.frag");
-            sg.Load("assets/test.scn");
+            //sg.AddRenderConfig("default", "assets/shaders/default.vert", "assets/shaders/default.frag");
+            //sg.Load("assets/test.scn");
         }
 
         this.states.push("MAINMENU", "", 0);
@@ -90,10 +106,14 @@ class Game {
         }
         this.gamelevel = which;
         this.states.push("MAINMENU", "", 0);
-        this.states.push("GAMEMODE", "", 0);
-        this.states.push("GO", "PAUSE", 6);
-        this.states.push("SET", "PAUSE", 4);
-        this.states.push("READY", "PAUSE", 2);
+        this.states.push("ACTIONGAME", "INIT", 0);
+    }
+
+    readySetGo() {
+        let name = this.states.topName;
+        this.states.pushwithsound(name, "GO", 3, "snare", "");
+        this.states.pushwithsound(name, "SET", 2, "snare", "");
+        this.states.pushwithsound(name, "READY", 1, "snare", "");
     }
 
     statePause(): boolean {
@@ -118,9 +138,9 @@ class Game {
 
     checkGameModeAskToQuit(): boolean {
         let XOR = this.XOR;
-        if (this.states.topName == "GAMEMODE") {
+        if (this.states.topAlt == "PLAY") {
             if (XOR.Input.getkey(KEY_BACK)) {
-                this.states.push("ASKTOQUIT", "", 0);
+                this.states.push("ASKTOQUIT", "INIT", 0);
                 this.states.push("ASKTOQUIT", "PAUSE", 0.5);
                 return true;
             }
@@ -165,28 +185,7 @@ class Game {
         this.states.update(tInSeconds);
         XOR.update(tInSeconds);
 
-        if (this.XOR.Scenegraph) {
-            let sg = this.XOR.Scenegraph;
-            let b1 = sg.GetNode("test.scn", "bunny");
-            let b2 = sg.GetNode("test.scn", "bunny2");
-            b1.geometryGroup = "bunny.obj";
-            b2.geometryGroup = "bunny.obj";
-
-            let mouse = XOR.Input.lastClick;
-            b1.posttransform = Matrix4.makeTranslation(mouse.x / 320 - 1, -mouse.y / 256 + 1 + GTE.oscillateBetween(XOR.t1, 0.5, 0.0, -0.5, 0.5), 0.0);
-            let dirto = b2.dirto(b1).norm().mul(0.1 * XOR.dt);
-            b2.posttransform.Translate(dirto.x, dirto.y, dirto.z);
-
-            let d = sg.GetNode("test.scn", "dragon");
-            dirto = XOR.Input.gamepadStick2.mul(XOR.dt);
-            let xangle = -XOR.Input.gamepadStick1.x * XOR.dt * 30;
-            let yangle = -XOR.Input.gamepadStick1.y * XOR.dt * 30;
-            let col3 = d.posttransform.col3(3);            
-            d.posttransform.Translate(dirto.y, 0, -dirto.x);
-            d.posttransform.Rotate(xangle, 0, 1, 0);
-            d.posttransform.Rotate(yangle, 0, 0, 1);
-        }
-
+        this.actionGame.playerLocation.copy(XOR.Input.lastClick);
 
         if (this.statePause()) return;
         if (this.stateMainMenu()) return;
@@ -210,6 +209,38 @@ class Game {
             XOR.Sounds.playSound('kickaccent')
         }
 
+        if (this.stateActionGame() && this.states.topAlt == "PLAY") {
+            if (this.actionGame.lost) {
+                this.states.pop();
+                this.states.push("ACTIONGAME", "INIT", 0);
+                this.states.push("ACTIONGAME", "LOST", 4);
+            }
+            else if (this.actionGame.won) {
+                this.states.pop();
+                this.states.push("ACTIONGAME", "INIT", 0);
+                this.states.push("ACTIONGAME", "WON", 4);
+            }
+            this.actionGame.update();
+            return;
+        }
+        if (this.stateAdventureGame()) return;
+    }
+
+    stateActionGame() {
+        if (this.states.topName != "ACTIONGAME") return false;
+        if (this.states.topAlt == "INIT") {
+            this.actionGame.init();
+            this.states.pop();
+            this.states.push("ACTIONGAME", "PLAY", 0);
+            this.readySetGo();
+        }
+        return true;
+    }
+
+    stateAdventureGame() {
+        if (this.states.topName != "ADVENTUREGAME") return false;
+        this.adventureGame.update();
+        return true;
     }
 
 
@@ -227,43 +258,43 @@ class Game {
             g.clearScreen('blue');
             g.putTextAligned('Loading', 'white', 0, 0, 0, 0);
         } else {
-            this.draw3d();
-            g.clearScreen();
+            //this.draw3d();
+            let gradient = g.context.createLinearGradient(0, 0, 0, XOR.height);
+            gradient.addColorStop(0, this.levelColors[0][0]);
+            gradient.addColorStop(1, this.levelColors[0][1]);
+            g.clearScreen(gradient);
             this.draw2d();
             this.draw2doverlay();
         }
     }
 
     draw3d() {
-        let XOR = this.XOR;
-        let sg = XOR.Scenegraph;
-        let gl = XOR.Fluxions.gl;
-        gl.clearColor(0.2, 0.3 * GTE.oscillate(XOR.t1, 0.5, 0.0, 0.3, 0.0), 0.4, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        let rc = sg.UseRenderConfig("default");
-        if (rc) {
-            sg.sunlight.setOrbit(45, 45, 10);
-            sg.camera.angleOfView = 45;
-            sg.camera.setLookAt(Vector3.make(0, 0, 5), Vector3.make(0, 0, 0), Vector3.make(0, 1, 0));
-            sg.SetGlobalParameters(rc)
-            sg.RenderScene(rc, "");
-        }
     }
 
     draw2d() {
         let g = this.XOR.Graphics;
-        g.drawTiles();
-        g.drawSprites();
+        //g.drawTiles();
+        //g.drawSprites();
+
+        if (this.states.topName == "ACTIONGAME") {
+            this.actionGame.draw(g);
+        }
+        if (this.states.topName == "ADVENTUREGAME") {
+            this.adventureGame.draw(g);
+        }
     }
 
     draw2doverlay() {
         let g = this.XOR.Graphics;
         g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
-        g.putTextAligned(this.states.topAlt, 'white', 1, -1, 0, 0);
+        g.putTextAligned(this.states.topAlt, 'white', -1, -1, 0, 32);
+        g.putTextAligned("Time: " + Math.ceil(this.XOR.t1 - this.states.topTime), 'white', -1, -1, 0, 64);
 
         if (this.states.topName == "MAINMENU") {
+            let font = g.context.font
+            g.context.font = "64px Salsbury,EssentialPragmataPro,sans-serif";
             g.putTextAligned(this.title, 'white', 0, 0, 0, -g.height / 5);
+            g.context.font = font;
             g.putTextAligned('Press START!', 'red', 0, 0, 0, 0);
         } else {
             g.context.fillStyle = 'red';
@@ -275,14 +306,28 @@ class Game {
             g.putTextAligned("ENTER = YES", "white", 0, 0, 0, g.fontHeight * 3);
         }
 
-        if (this.states.topName == "READY") {
-            g.putTextAligned('READY!', 'red', -1, 1, 0, 0);
+        if (this.states.topAlt == "READY") {
+            g.putTextAligned('READY!', 'red', 0, 0, 0, 0);
         }
-        if (this.states.topName == "SET") {
-            g.putTextAligned('SET!', 'yellow', 0, 1, 0, 0);
+        if (this.states.topAlt == "SET") {
+            g.putTextAligned('SET!', 'yellow', 0, 0, 0, 0);
         }
-        if (this.states.topName == "GO") {
-            g.putTextAligned('GO!!!', 'green', 1, 1, 0, 0);
+        if (this.states.topAlt == "GO") {
+            g.putTextAligned('GO!!!', 'green', 0, 0, 0, 0);
+        }
+
+        if (this.states.topName == "ACTIONGAME") {
+            this.actionGame.draw2doverlay(g);
+            if (this.states.topAlt == "WON") {
+                g.putTextAligned("YOU WON THIS ROUND!!!", 'red', 0, 0, 0, 0);
+            }
+            if (this.states.topAlt == "LOST") {
+                g.putTextAligned("YOU LOST THIS ROUND!!!", 'red', 0, 0, 0, 0);
+            }
+        }
+
+        if (this.states.topName == "ADVENTUREGAME") {
+            this.adventureGame.draw2doverlay(g);
         }
     }
 

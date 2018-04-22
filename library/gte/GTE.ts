@@ -38,6 +38,18 @@ namespace GTE {
         return Math.sin(frequency * t + phase) * (upperLimit - lowerLimit) * 0.5 + lowerLimit;
     }
 
+    export function random(a: number, b: number): number {
+        return Math.random() * (b - a + 1) + a;
+    }
+
+    export function rand01(): number {
+        return Math.random();
+    }
+
+    export function rand1(): number {
+        return Math.random() * 2 - 1;
+    }
+
     export function clamp(x: number, a: number, b: number) {
         return x < a ? a : x > b ? b : x;
     }

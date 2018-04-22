@@ -1,3 +1,18 @@
+declare class Hatchetfish {
+    private _logElementId;
+    private _logElement;
+    private _numLines;
+    constructor(logElementId?: string);
+    logElement: string;
+    clear(): void;
+    private writeToLog(prefix, message, ...optionalParams);
+    log(message: string, ...optionalParams: any[]): void;
+    info(message: string, ...optionalParams: any[]): void;
+    error(message: string, ...optionalParams: any[]): void;
+    warn(message: string, ...optionalParams: any[]): void;
+    debug(message: string, ...optionalParams: any[]): void;
+}
+declare var hflog: Hatchetfish;
 declare class Vector2 {
     x: number;
     y: number;
@@ -19,6 +34,7 @@ declare class Vector2 {
     lengthSquared(): number;
     norm(): Vector2;
     static make(x: number, y: number): Vector2;
+    static makeUnit(x: number, y: number): Vector2;
     static dot(v1: Vector2, v2: Vector2): number;
     static cross(a: Vector2, b: Vector2): number;
     static normalize(v: Vector2): Vector2;
@@ -58,6 +74,7 @@ declare class Vector3 {
     lengthSquared(): number;
     norm(): Vector3;
     normalize(): Vector3;
+    distance(v: Vector3): number;
     get(index: number): number;
     static dot(v1: Vector3, v2: Vector3): number;
     static cross(a: Vector3, b: Vector3): Vector3;
@@ -221,6 +238,9 @@ declare class Matrix4 {
 declare namespace GTE {
     function oscillate(t: number, frequency?: number, phase?: number, amplitude?: number, offset?: number): number;
     function oscillateBetween(t: number, frequency?: number, phase?: number, lowerLimit?: number, upperLimit?: number): number;
+    function random(a: number, b: number): number;
+    function rand01(): number;
+    function rand1(): number;
     function clamp(x: number, a: number, b: number): number;
     function lerp(a: number, b: number, x: number): number;
     function smoothstep(a: number, b: number, x: number): number;
@@ -229,33 +249,6 @@ declare namespace GTE {
     function gaussian(x: number, center: number, sigma: number): number;
     function min3(a: number, b: number, c: number): number;
     function max3(a: number, b: number, c: number): number;
-}
-declare class Hatchetfish {
-    private _logElementId;
-    private _logElement;
-    private _numLines;
-    constructor(logElementId?: string);
-    logElement: string;
-    clear(): void;
-    private writeToLog(prefix, message, ...optionalParams);
-    log(message: string, ...optionalParams: any[]): void;
-    info(message: string, ...optionalParams: any[]): void;
-    error(message: string, ...optionalParams: any[]): void;
-    warn(message: string, ...optionalParams: any[]): void;
-    debug(message: string, ...optionalParams: any[]): void;
-}
-declare var hflog: Hatchetfish;
-declare class Toadfish {
-    private _context;
-    private _soundVolume;
-    private _sounds;
-    private _buffers;
-    private _curbuffer;
-    constructor();
-    setSound(name: string, ab: AudioBuffer): void;
-    setVolume(amount: number): void;
-    playSound(name: string): void;
-    queueSound(name: string, url: string): void;
 }
 declare class RenderingContext {
     width: number;
@@ -313,38 +306,6 @@ declare class RenderConfig {
     GetUniformLocation(name: string): WebGLUniformLocation | null;
     Reset(vertShaderSource: string, fragShaderSource: string): boolean;
     private updateActiveUniforms();
-}
-declare class Camera {
-    _transform: Matrix4;
-    private _center;
-    private _eye;
-    private _angleOfView;
-    private _aspectRatio;
-    private _znear;
-    private _zfar;
-    projection: Matrix4;
-    pretransform: Matrix4;
-    posttransform: Matrix4;
-    constructor();
-    readonly transform: Matrix4;
-    aspectRatio: number;
-    angleOfView: number;
-    zfar: number;
-    znear: number;
-    readonly position: Vector3;
-    readonly right: Vector3;
-    readonly left: Vector3;
-    readonly up: Vector3;
-    readonly down: Vector3;
-    readonly forward: Vector3;
-    readonly backward: Vector3;
-    eye: Vector3;
-    center: Vector3;
-    moveTo(position: Vector3): void;
-    move(delta: Vector3): Vector3;
-    turn(delta: Vector3): void;
-    setOrbit(azimuthInDegrees: number, pitchInDegrees: number, distance: number): Matrix4;
-    setLookAt(eye: Vector3, center: Vector3, up: Vector3): Matrix4;
 }
 declare class Surface {
     readonly mode: number;
@@ -445,6 +406,7 @@ declare namespace Colors {
     const Indigo: Vector3;
     const Violet: Vector3;
     const Magenta: Vector3;
+    const Rose: Vector3;
     const Brown: Vector3;
     const SkyBlue: Vector3;
     const DarkRed: Vector3;
@@ -683,23 +645,156 @@ declare class Scenegraph {
     private loadMTL(lines, name, path);
     getFBO(name: string): FBO;
 }
+declare class Camera {
+    _transform: Matrix4;
+    private _center;
+    private _eye;
+    private _angleOfView;
+    private _aspectRatio;
+    private _znear;
+    private _zfar;
+    projection: Matrix4;
+    pretransform: Matrix4;
+    posttransform: Matrix4;
+    constructor();
+    readonly transform: Matrix4;
+    aspectRatio: number;
+    angleOfView: number;
+    zfar: number;
+    znear: number;
+    readonly position: Vector3;
+    readonly right: Vector3;
+    readonly left: Vector3;
+    readonly up: Vector3;
+    readonly down: Vector3;
+    readonly forward: Vector3;
+    readonly backward: Vector3;
+    eye: Vector3;
+    center: Vector3;
+    moveTo(position: Vector3): void;
+    move(delta: Vector3): Vector3;
+    turn(delta: Vector3): void;
+    setOrbit(azimuthInDegrees: number, pitchInDegrees: number, distance: number): Matrix4;
+    setLookAt(eye: Vector3, center: Vector3, up: Vector3): Matrix4;
+}
+declare const PLAYER = 0;
+declare const THINCAMEL = 1;
+declare const NORMALCAMEL = 2;
+declare const FATCAMEL = 3;
+declare const ARROW = 4;
+declare const RICESACK = 5;
+declare const RICEBOWL = 6;
+declare const GRAVESTONE = 7;
+declare const GEM = 8;
+declare const RUBY = 9;
+declare const GOLD = 10;
+declare const SNOW = 11;
+declare const BUSH = 12;
+declare const CACTUS = 13;
+declare const TREE = 14;
+declare const PLANT = 15;
+declare const ROCK = 16;
+declare const SCORPION = 17;
+declare const PIRATE = 18;
+declare const NINJA = 19;
+declare const TIGER = 20;
+declare const DOG = 21;
+declare const EAGLE = 22;
+declare const SNAKE = 23;
+declare const MAX_SPRITES = 24;
+declare const TERRAIN_START = 11;
+declare const TERRAIN_END = 16;
+declare const ENEMY_START = 17;
+declare const ENEMY_END = 23;
+declare const MAX_CAMELS = 16;
+declare const MAX_ENEMIES = 32;
+declare const MAX_KIBBLES = 128;
+declare const MAX_TERRAIN = 32;
+declare const MAX_MISSILES = 4;
+declare const KIBBLES_PER_EXPLOSION = 16;
+declare const KIBBLE_SPEED = 64;
+declare const KIBBLE_GRAVITY = 16;
+declare const ENEMY_SPEED = 32;
+declare const MISSILE_SPEED = 512;
+declare const PLAYER_SPEED = 128;
+declare function CreateSprites(): [number, number][];
+declare class ActionGame {
+    XOR: LibXOR;
+    sprites: [number, number][];
+    camels: Sprite[];
+    player: Sprite;
+    enemies: Sprite[];
+    kibbles: Sprite[];
+    terrain: Sprite[];
+    missiles: Sprite[];
+    lastKibble: Vector3;
+    animframe: number;
+    numCamels: number;
+    numEnemies: number;
+    score: number;
+    camelLocation: Vector3;
+    playerLocation: Vector3;
+    readonly playerField: Vector2;
+    constructor(XOR: LibXOR);
+    init(): void;
+    readonly lost: boolean;
+    readonly won: boolean;
+    startKibbles(x: number, y: number): void;
+    startMissile(x: number, y: number, dir: Vector2): void;
+    update(): void;
+    updatePlayer(t1: number): void;
+    updateCamels(t1: number): void;
+    updateEnemies(t1: number): void;
+    updateKibbles(t1: number): void;
+    updateMissiles(t1: number): void;
+    draw(g: GraphicsComponent): void;
+    draw2doverlay(g: GraphicsComponent): void;
+}
+declare class AdventureGame {
+    XOR: LibXOR;
+    sprites: [number, number][];
+    constructor(XOR: LibXOR);
+    update(): void;
+    draw(g: GraphicsComponent): void;
+    draw2doverlay(g: GraphicsComponent): void;
+}
+declare class Toadfish {
+    private _context;
+    private _soundVolume;
+    private _sounds;
+    private _buffers;
+    private _curbuffer;
+    constructor();
+    setSound(name: string, ab: AudioBuffer): void;
+    setVolume(amount: number): void;
+    playSound(name: string): void;
+    queueSound(name: string, url: string): void;
+}
 declare class Sprite {
     index: number;
-    x: number;
-    y: number;
+    animframe: number;
     offset: Vector2;
     position: Vector2;
     velocity: Vector2;
+    refpoint: Vector2;
     random: number;
     timealive: number;
     enabled: boolean;
     alive: number;
+    type: number;
     active: boolean;
+    readonly x: number;
+    readonly y: number;
     constructor(index: number);
     reset(x: number, y: number): void;
     update(dt: number): void;
+    move(dt: number): void;
+    dirto(sprite: Sprite): Vector2;
+    distance(sprite: Sprite): number;
+    collides(sprite: Sprite, d: number): boolean;
     static Distance(sprite1: Sprite, sprite2: Sprite): number;
     static Collide(sprite1: Sprite, sprite2: Sprite, d: number): boolean;
+    static DirTo(sprite1: Sprite, sprite2: Sprite): Vector2;
 }
 declare class GraphicsComponent {
     XOR: LibXOR;
@@ -729,15 +824,18 @@ declare class GraphicsComponent {
     readonly spritesLoaded: boolean;
     readonly fontHeight: number;
     setFont(fontName: string, pixelHeight: number): void;
-    clearScreen(color?: string | null): void;
+    clearScreen(color?: string | CanvasGradient | CanvasPattern | null): void;
     loadSprites(url: string): void;
     resize(src: ImageData, dstw: number, dsth: number): ImageData;
     extractSprites(): void;
     setText(color: string, alignment: string): void;
     putText(text: string, x: number, y: number): void;
     putTextAligned(text: string, color: string, xloc: number, yloc: number, xo: number, yo: number): void;
+    putSprite(index: number, x: number, y: number): void;
+    private spriteCoords;
     drawSprite(index: number, x: number, y: number): void;
     drawSprites(): void;
+    drawBox(x: number, y: number, color: string): void;
     readonly canvas: HTMLCanvasElement;
     readonly hidden: boolean;
     focus(): void;
@@ -777,6 +875,7 @@ declare class InputComponent {
     onmouseup(e: MouseEvent, v: Vector3): void;
     setkey(which: number, state: boolean): void;
     getkey(which: number): boolean;
+    getkey2(negwhich: number, poswhich: number): number;
     onkeychange(e: KeyboardEvent, state: boolean): void;
 }
 declare class MusicComponent {
@@ -832,18 +931,24 @@ declare class State {
     constructor(name: string, alt?: string, delayTime?: number, queueSound?: string, queueMusic?: string);
 }
 declare class StateMachine {
+    XOR: LibXOR;
     states: State[];
     private _t1;
-    constructor();
+    constructor(XOR: LibXOR);
     update(tInSeconds: number): void;
     push(name: string, alt: string, delayTime: number): void;
+    pushwithsound(name: string, alt: string, delayTime: number, sound: string, music: string): void;
     pop(): void;
     readonly topName: string;
     readonly topAlt: string;
     readonly topTime: number;
+    readonly topSound: string;
+    readonly topMusic: string;
 }
 declare class Game {
     XOR: LibXOR;
+    actionGame: ActionGame;
+    adventureGame: AdventureGame;
     series: string;
     title: string;
     author: string;
@@ -852,18 +957,23 @@ declare class Game {
     gamelevel: number;
     score: number;
     states: StateMachine;
+    levelColors: [string, string][];
+    currentEnvironmentColor: string;
     constructor();
     focus(): void;
     run(): void;
     mainloop(t: number): void;
     load(): void;
     changelevel(which: number): void;
+    readySetGo(): void;
     statePause(): boolean;
     stateMainMenu(): boolean;
     checkGameModeAskToQuit(): boolean;
     stateAskToQuit(): boolean;
     getTimeredKey(key: number, delay?: number): boolean;
     update(tInSeconds: number): void;
+    stateActionGame(): boolean;
+    stateAdventureGame(): boolean;
     display(): void;
     draw3d(): void;
     draw2d(): void;
