@@ -4178,7 +4178,7 @@ class AdventureGame {
         return false;
     }
     get timeForAction() {
-        if (this.numTurns > 10)
+        if (this.numTurns > 20)
             return true;
         return false;
     }
@@ -4337,27 +4337,27 @@ class AdventureGame {
         }
     }
     createCamelScenario() {
-        let lostCamels = GTE.random(0, Math.min(this.numCamels, 3)) | 0;
+        let lostCamels = GTE.random(1, Math.min(this.numCamels, 3)) | 0;
         this.numCamels -= lostCamels;
         let adverbs = ["unfortunate", "unthinkable", "improbable"];
         this.lines = [
-            "Your camels suffered an " + adverbs[GTE.random(0, 2) | 0] + " accident.",
-            "You lost " + lostCamels + " camels."
+            "Your camels suffered an " + adverbs[GTE.random(0, 2) | 0],
+            "accident. You lost " + lostCamels + " camels."
         ];
     }
     createHealthScenario() {
-        let lostHealth = GTE.random(0, Math.min(this.playerHealth, 3)) | 0;
+        let lostHealth = GTE.random(1, Math.min(this.playerHealth, 3)) | 0;
         this.playerHealth -= lostHealth;
         ;
         let issues = ["E. coli", "tapeworms", "the flu", "botulism"];
         this.lines = [
             "You got sick with " + issues[GTE.random(0, issues.length - 1) | 0] + ".",
-            "You lost " + lostHealth + " health rating points.",
-            "You have " + this.playerHealth + " health rating points remaining."
+            "You lost " + lostHealth + " health points.",
+            "You have " + this.playerHealth + " health points left."
         ];
     }
     createFoodScenario() {
-        let lostFood = GTE.random(0, Math.min(this.numSacksOfFood, 3)) | 0;
+        let lostFood = GTE.random(1, Math.min(this.numSacksOfFood, 3)) | 0;
         this.numSacksOfFood -= lostFood;
         let issues = ["contamination", "camel spit", "bug infestation", "spoilage"];
         this.lines = [
@@ -4393,6 +4393,7 @@ class AdventureGame {
     sim() {
         this.numTurns++;
         this.milesTraveled += GTE.random(50, 60) | 0;
+        this.currentStepOfJourney = GTE.clamp(this.milesTraveled / (6000 / this.journeySteps.length), 0, this.journeySteps.length - 1) | 0;
         let mix = this.milesTraveled / 6000.0;
         this.market = [
             GTE.lerp(GTE.random(9, 11), GTE.random(45, 55), mix) | 0,
