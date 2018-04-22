@@ -4122,17 +4122,85 @@ class ActionGame {
         g.putTextAligned("Lives: " + this.player.alive, 'white', 1, 1, 0, 0);
     }
 }
+const INITIAL_CAMELS = 16;
+const INITIAL_HEALTH = 16;
+const MILES_TO_TRAVEL = 6000;
 class AdventureGame {
     constructor(XOR) {
         this.XOR = XOR;
+        this.milesTraveled = 0;
+        this.numCamels = 16;
+        this.playerHealth = 5;
+        this.numJewels = 100;
+        this.numTurns = 0;
+        this.lines = [];
         this.sprites = CreateSprites();
+        this.states = new StateMachine(XOR);
+    }
+    get lost() {
+        if (this.numCamels <= 0)
+            return true;
+        if (this.playerHealth <= 0)
+            return true;
+        return false;
+    }
+    get won() {
+        if (this.milesTraveled > MILES_TO_TRAVEL)
+            return true;
+        return false;
+    }
+    get timeForAction() {
+        if (this.numTurns > 10)
+            return true;
+        return false;
+    }
+    init() {
+        this.milesTraveled = 0;
+        this.numCamels = INITIAL_CAMELS;
+        this.playerHealth = INITIAL_HEALTH;
+        this.lines = [
+            "You are setting out on a fantastic",
+            "journey...",
+            "",
+            "It is full of danger...",
+            "",
+            "Yay!"
+        ];
+        this.XOR.Timers.start("simwait", 4);
+    }
+    start() {
+        this.numTurns = 0;
     }
     update() {
-        let t1 = this.XOR.t1;
+        let XOR = this.XOR;
+        if (XOR.Timers.ended("simwait")) {
+            this.sim();
+            XOR.Timers.start("simwait", 4);
+        }
+    }
+    printStatus() {
+        this.lines = [
+            "Number of camels: " + this.numCamels,
+            "Health: " + this.playerHealth
+        ];
+    }
+    sim() {
+        this.numTurns++;
+        this.printStatus();
     }
     draw(g) {
     }
     draw2doverlay(g) {
+        let y = 0;
+        let font = g.context.font;
+        g.setFont("EssentialPragmataPro", 32);
+        g.context.fillStyle = "black";
+        g.context.textAlign = "left";
+        for (let line of this.lines) {
+            g.putText(line, 0, y);
+            y += 32;
+        }
+        g.context.font = font;
     }
 }
 // Toadfish Library
@@ -5193,7 +5261,8 @@ class Game {
         }
         this.gamelevel = which;
         this.states.push("MAINMENU", "", 0);
-        this.states.push("ACTIONGAME", "INIT", 0);
+        //this.states.push("ACTIONGAME", "INIT", 0);
+        this.states.push("ADVENTUREGAME", "INIT", 0);
     }
     readySetGo() {
         let name = this.states.topName;
@@ -5304,8 +5373,25 @@ class Game {
             this.actionGame.update();
             return;
         }
-        if (this.stateAdventureGame())
+        if (this.stateAdventureGame() && this.states.topAlt == "PLAY") {
+            if (this.adventureGame.lost) {
+                this.states.pop();
+                this.states.push("ADVENTUREGAME", "LOST", 4);
+                this.states.push("MAINMENU", "", 0);
+            }
+            else if (this.adventureGame.won) {
+                this.states.pop();
+                this.states.push("MAINMENU", "", 0);
+                this.states.push("ADVENTUREGAME", "WON", 4);
+            }
+            else if (this.adventureGame.timeForAction) {
+                this.states.push("ACTIONGAME", "INIT", 0);
+            }
+            else {
+                this.adventureGame.update();
+            }
             return;
+        }
     }
     stateActionGame() {
         if (this.states.topName != "ACTIONGAME")
@@ -5321,7 +5407,13 @@ class Game {
     stateAdventureGame() {
         if (this.states.topName != "ADVENTUREGAME")
             return false;
-        this.adventureGame.update();
+        if (this.states.topAlt == "INIT") {
+            this.adventureGame.init();
+            this.adventureGame.start();
+            this.states.pop();
+            this.states.push("ADVENTUREGAME", "PLAY", 0);
+            this.readySetGo();
+        }
         return true;
     }
     display() {
@@ -5361,9 +5453,11 @@ class Game {
     }
     draw2doverlay() {
         let g = this.XOR.Graphics;
-        g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
-        g.putTextAligned(this.states.topAlt, 'white', -1, -1, 0, 32);
-        g.putTextAligned("Time: " + Math.ceil(this.XOR.t1 - this.states.topTime), 'white', -1, -1, 0, 64);
+        if (this.states.topName != "ADVENTUREGAME") {
+            g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
+            g.putTextAligned(this.states.topAlt, 'white', -1, -1, 0, 32);
+            g.putTextAligned("Time: " + Math.ceil(this.XOR.t1 - this.states.topTime), 'white', -1, -1, 0, 64);
+        }
         if (this.states.topName == "MAINMENU") {
             let font = g.context.font;
             g.context.font = "64px Salsbury,EssentialPragmataPro,sans-serif";
@@ -5403,13 +5497,14 @@ class Game {
     }
     setInstructions() {
         let EIs = [
-            ["leftInstructions", ""],
-            ["rightInstructions", ""],
-            ["upInstructions", ""],
-            ["downInstructions", ""],
-            ["enterInstructions", ""],
-            ["escapeInstructions", ""],
-            ["spaceInstructions", ""]
+            ["gameInstructions", "Part Adventure, Part Action. Marco Polo is journeying across Asia with his camels. But many deadly foes and situations lay ahead. Will he survive?"],
+            ["leftInstructions", "Move left"],
+            ["rightInstructions", "Move right"],
+            ["upInstructions", "Move up"],
+            ["downInstructions", "Move down"],
+            ["enterInstructions", "Fire"],
+            ["escapeInstructions", "Quit game"],
+            ["spaceInstructions", "Fire"]
         ];
         for (let ei of EIs) {
             let e = document.getElementById(ei[0]);

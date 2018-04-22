@@ -750,11 +750,28 @@ declare class ActionGame {
     draw(g: GraphicsComponent): void;
     draw2doverlay(g: GraphicsComponent): void;
 }
+declare const INITIAL_CAMELS = 16;
+declare const INITIAL_HEALTH = 16;
+declare const MILES_TO_TRAVEL = 6000;
 declare class AdventureGame {
     XOR: LibXOR;
+    milesTraveled: number;
+    numCamels: number;
+    playerHealth: number;
+    numJewels: number;
+    numTurns: number;
+    lines: string[];
+    states: StateMachine;
     sprites: [number, number][];
     constructor(XOR: LibXOR);
+    readonly lost: boolean;
+    readonly won: boolean;
+    readonly timeForAction: boolean;
+    init(): void;
+    start(): void;
     update(): void;
+    printStatus(): void;
+    sim(): void;
     draw(g: GraphicsComponent): void;
     draw2doverlay(g: GraphicsComponent): void;
 }

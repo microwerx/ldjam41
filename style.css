@@ -10,6 +10,12 @@
     src: url('assets/webfonts/3650A8_0_0.eot?#iefix') format('embedded-opentype'), url('assets/webfonts/3650A8_0_0.woff2') format('woff2'), url('assets/webfonts/3650A8_0_0.woff') format('woff'), url('assets/webfonts/3650A8_0_0.ttf') format('truetype');
 }
 
+@font-face {
+    font-family: 'Garibaldi';
+    src: url('assets/webfonts/36656A_0_0.eot');
+    src: url('assets/webfonts/36656A_0_0.eot?#iefix') format('embedded-opentype'), url('assets/webfonts/36656A_0_0.woff2') format('woff2'), url('assets/webfonts/36656A_0_0.woff') format('woff'), url('assets/webfonts/36656A_0_0.ttf') format('truetype');
+}
+
 html,
 body {
     display: block;

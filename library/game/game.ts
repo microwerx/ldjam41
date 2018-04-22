@@ -106,7 +106,8 @@ class Game {
         }
         this.gamelevel = which;
         this.states.push("MAINMENU", "", 0);
-        this.states.push("ACTIONGAME", "INIT", 0);
+        //this.states.push("ACTIONGAME", "INIT", 0);
+        this.states.push("ADVENTUREGAME", "INIT", 0);
     }
 
     readySetGo() {
@@ -223,7 +224,25 @@ class Game {
             this.actionGame.update();
             return;
         }
-        if (this.stateAdventureGame()) return;
+        if (this.stateAdventureGame() && this.states.topAlt == "PLAY") {
+            if (this.adventureGame.lost) {
+                this.states.pop();
+                this.states.push("ADVENTUREGAME", "LOST", 4);
+                this.states.push("MAINMENU", "", 0);
+            }
+            else if (this.adventureGame.won) {
+                this.states.pop();
+                this.states.push("MAINMENU", "", 0);
+                this.states.push("ADVENTUREGAME", "WON", 4);
+            }
+            else if (this.adventureGame.timeForAction) {
+                this.states.push("ACTIONGAME", "INIT", 0);
+            }
+            else {
+                this.adventureGame.update();
+            }
+            return;
+        }
     }
 
     stateActionGame() {
@@ -239,7 +258,13 @@ class Game {
 
     stateAdventureGame() {
         if (this.states.topName != "ADVENTUREGAME") return false;
-        this.adventureGame.update();
+        if (this.states.topAlt == "INIT") {
+            this.adventureGame.init();
+            this.adventureGame.start();
+            this.states.pop();
+            this.states.push("ADVENTUREGAME", "PLAY", 0);
+            this.readySetGo();
+        }
         return true;
     }
 
@@ -286,10 +311,11 @@ class Game {
 
     draw2doverlay() {
         let g = this.XOR.Graphics;
-        g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
-        g.putTextAligned(this.states.topAlt, 'white', -1, -1, 0, 32);
-        g.putTextAligned("Time: " + Math.ceil(this.XOR.t1 - this.states.topTime), 'white', -1, -1, 0, 64);
-
+        if (this.states.topName != "ADVENTUREGAME") {
+            g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
+            g.putTextAligned(this.states.topAlt, 'white', -1, -1, 0, 32);
+            g.putTextAligned("Time: " + Math.ceil(this.XOR.t1 - this.states.topTime), 'white', -1, -1, 0, 64);
+        }
         if (this.states.topName == "MAINMENU") {
             let font = g.context.font
             g.context.font = "64px Salsbury,EssentialPragmataPro,sans-serif";
@@ -333,13 +359,14 @@ class Game {
 
     setInstructions() {
         let EIs: Array<[string, string]> = [
-            ["leftInstructions", ""],
-            ["rightInstructions", ""],
-            ["upInstructions", ""],
-            ["downInstructions", ""],
-            ["enterInstructions", ""],
-            ["escapeInstructions", ""],
-            ["spaceInstructions", ""]
+            ["gameInstructions", "Part Adventure, Part Action. Marco Polo is journeying across Asia with his camels. But many deadly foes and situations lay ahead. Will he survive?"],
+            ["leftInstructions", "Move left"],
+            ["rightInstructions", "Move right"],
+            ["upInstructions", "Move up"],
+            ["downInstructions", "Move down"],
+            ["enterInstructions", "Fire"],
+            ["escapeInstructions", "Quit game"],
+            ["spaceInstructions", "Fire"]
         ];
         for (let ei of EIs) {
             let e = document.getElementById(ei[0]);
