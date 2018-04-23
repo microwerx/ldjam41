@@ -1027,7 +1027,7 @@ declare class Game {
     score: number;
     states: StateMachine;
     levelColors: [string, string][];
-    currentEnvironmentColor: string;
+    currentEnvironmentColor: number;
     constructor();
     focus(): void;
     run(): void;

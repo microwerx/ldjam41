@@ -25,9 +25,11 @@ class Game {
     states: StateMachine;
 
     levelColors: [string, string][] = [
-        ["#7271dc", '#1a2dff'],
+        ["#b87b8f", '#1a2dff'], // MAINMENU
+        ["#7271dc", '#1a2dff'], // ADVENTURE GAME
+        ['#e6e6e6', '#dcc371'], // ARCADE GAME
     ];
-    currentEnvironmentColor: string = 'lightbrown';
+    currentEnvironmentColor: number = 0;
 
     constructor() {
         this.XOR = new LibXOR(640, 512);
@@ -134,6 +136,7 @@ class Game {
     stateMainMenu(): boolean {
         let XOR = this.XOR;
         if (this.states.topName == "MAINMENU") {
+            this.currentEnvironmentColor = 0;
             if (XOR.Input.getkey(KEY_START)) {
                 this.changelevel(1);
             }
@@ -261,6 +264,7 @@ class Game {
     stateActionGame() {
         if (this.states.topName != "ACTIONGAME") return false;
         if (this.states.topAlt == "INIT") {
+            this.currentEnvironmentColor = 2;
             this.actionGame.init();
             this.states.pop();
             this.states.push("ACTIONGAME", "PLAY", 0);
@@ -272,6 +276,7 @@ class Game {
     stateAdventureGame() {
         if (this.states.topName != "ADVENTUREGAME") return false;
         if (this.states.topAlt == "INIT") {
+            this.currentEnvironmentColor = 1;
             this.adventureGame.init();
             this.adventureGame.start();
             this.states.pop();
@@ -298,8 +303,9 @@ class Game {
         } else {
             //this.draw3d();
             let gradient = g.context.createLinearGradient(0, 0, 0, XOR.height);
-            gradient.addColorStop(0, this.levelColors[0][0]);
-            gradient.addColorStop(1, this.levelColors[0][1]);
+            gradient.addColorStop(0, this.levelColors[this.currentEnvironmentColor][0]);
+            gradient.addColorStop(1, this.levelColors[this.currentEnvironmentColor][1]);
+
             g.clearScreen(gradient);
             this.draw2d();
             this.draw2doverlay();
