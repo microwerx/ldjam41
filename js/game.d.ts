@@ -239,6 +239,7 @@ declare namespace GTE {
     function oscillate(t: number, frequency?: number, phase?: number, amplitude?: number, offset?: number): number;
     function oscillateBetween(t: number, frequency?: number, phase?: number, lowerLimit?: number, upperLimit?: number): number;
     function random(a: number, b: number): number;
+    function dice(sides: number): number;
     function rand01(): number;
     function rand1(): number;
     function clamp(x: number, a: number, b: number): number;
@@ -706,10 +707,10 @@ declare const TERRAIN_START = 11;
 declare const TERRAIN_END = 16;
 declare const ENEMY_START = 17;
 declare const ENEMY_END = 23;
-declare const MAX_CAMELS = 16;
+declare const MAX_CAMELS = 64;
 declare const MAX_ENEMIES = 32;
 declare const MAX_KIBBLES = 128;
-declare const MAX_TERRAIN = 32;
+declare const MAX_TERRAIN = 16;
 declare const MAX_MISSILES = 4;
 declare const KIBBLES_PER_EXPLOSION = 16;
 declare const KIBBLE_SPEED = 64;
@@ -717,9 +718,12 @@ declare const KIBBLE_GRAVITY = 16;
 declare const ENEMY_SPEED = 32;
 declare const MISSILE_SPEED = 512;
 declare const PLAYER_SPEED = 128;
+declare const SIM_TIME_PER_STEP = 0.5;
+declare const MAX_PLAYER_HEALTH = 30;
 declare function CreateSprites(): [number, number][];
 declare class ActionGame {
     XOR: LibXOR;
+    sharedState: SharedState;
     sprites: [number, number][];
     camels: Sprite[];
     player: Sprite;
@@ -728,15 +732,15 @@ declare class ActionGame {
     terrain: Sprite[];
     missiles: Sprite[];
     lastKibble: Vector3;
+    missileCount: number;
     animframe: number;
-    numCamels: number;
-    numEnemies: number;
-    score: number;
-    camelLocation: Vector3;
-    playerLocation: Vector3;
+    readonly camelSpawnLocation: Vector3;
+    readonly playerSpawnLocation: Vector3;
     readonly playerField: Vector2;
-    constructor(XOR: LibXOR);
+    lastDeathPosition: Vector2;
+    constructor(XOR: LibXOR, sharedState: SharedState);
     init(): void;
+    start(): void;
     readonly lost: boolean;
     readonly won: boolean;
     startKibbles(x: number, y: number): void;
@@ -747,6 +751,7 @@ declare class ActionGame {
     updateEnemies(t1: number): void;
     updateKibbles(t1: number): void;
     updateMissiles(t1: number): void;
+    updateTerrain(t1: number): void;
     draw(g: GraphicsComponent): void;
     draw2doverlay(g: GraphicsComponent): void;
 }
@@ -760,14 +765,11 @@ declare const MAX_MARKET_ITEMS = 3;
 declare const SCENARIO_CAMEL = 0;
 declare const SCENARIO_HEALTH = 1;
 declare const SCENARIO_FOOD = 2;
+declare const SCENARIO_LUCK = 3;
+declare function plural(x: number): string;
 declare class AdventureGame {
     XOR: LibXOR;
-    milesTraveled: number;
-    numCamels: number;
-    numMedicines: number;
-    numSacksOfFood: number;
-    numJewels: number;
-    playerHealth: number;
+    sharedState: SharedState;
     numTurns: number;
     currentChoice: number;
     currentQuantity: number;
@@ -775,12 +777,11 @@ declare class AdventureGame {
     currentScenarioDescription: string;
     maxQuantity: number;
     market: number[];
-    currentStepOfJourney: number;
     journeySteps: string[];
     lines: string[];
     states: StateMachine;
     sprites: [number, number][];
-    constructor(XOR: LibXOR);
+    constructor(XOR: LibXOR, sharedState: SharedState);
     readonly lost: boolean;
     readonly won: boolean;
     readonly timeForAction: boolean;
@@ -797,6 +798,7 @@ declare class AdventureGame {
     createCamelScenario(): void;
     createHealthScenario(): void;
     createFoodScenario(): void;
+    createLuckScenario(): void;
     status(): void;
     sim(): void;
     draw(g: GraphicsComponent): void;
@@ -879,7 +881,7 @@ declare class GraphicsComponent {
     private spriteCoords;
     drawSprite(index: number, x: number, y: number): void;
     drawSprites(): void;
-    drawBox(x: number, y: number, color: string): void;
+    drawBox(x: number, y: number, color: string, size?: number): void;
     readonly canvas: HTMLCanvasElement;
     readonly hidden: boolean;
     focus(): void;
@@ -898,6 +900,9 @@ declare const KEY_LEFT = 14;
 declare const KEY_RIGHT = 15;
 declare const KEY_UP = 12;
 declare const KEY_DOWN = 13;
+declare const KEY_LEFTCLICK = 20;
+declare const KEY_MIDDLECLICK = 21;
+declare const KEY_RIGHTCLICK = 22;
 declare class InputComponent {
     buttons: number;
     wasdFormat: boolean;
@@ -918,6 +923,7 @@ declare class InputComponent {
     onmousedown(e: MouseEvent, v: Vector3): void;
     onmouseup(e: MouseEvent, v: Vector3): void;
     clearkeys(): void;
+    setmousebutton(which: number, state: boolean): void;
     setkey(which: number, state: boolean): void;
     getkey(which: number): boolean;
     getkey2(negwhich: number, poswhich: number): number;
@@ -991,8 +997,25 @@ declare class StateMachine {
     readonly topSound: string;
     readonly topMusic: string;
 }
+declare class SharedState {
+    milesTraveled: number;
+    numCamels: number;
+    numMedicines: number;
+    numSacksOfFood: number;
+    numJewels: number;
+    numHealthPoints: number;
+    numMissiles: number;
+    score: number;
+    numEnemies: number;
+    enemySpeed: number;
+    currentStepOfJourney: number;
+    constructor();
+    readonly lost: boolean;
+    readonly won: boolean;
+}
 declare class Game {
     XOR: LibXOR;
+    sharedState: SharedState;
     actionGame: ActionGame;
     adventureGame: AdventureGame;
     series: string;

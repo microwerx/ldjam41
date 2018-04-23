@@ -31,10 +31,10 @@ const TERRAIN_END = ROCK;
 const ENEMY_START = SCORPION;
 const ENEMY_END = SNAKE;
 
-const MAX_CAMELS = 16;
+const MAX_CAMELS = 64;
 const MAX_ENEMIES = 32;
 const MAX_KIBBLES = 128;
-const MAX_TERRAIN = 32;
+const MAX_TERRAIN = 16;
 const MAX_MISSILES = 4;
 
 const KIBBLES_PER_EXPLOSION = 16;
@@ -45,8 +45,11 @@ const ENEMY_SPEED = 32;
 const MISSILE_SPEED = 512;
 const PLAYER_SPEED = 128;
 
+const SIM_TIME_PER_STEP = 0.5;
+const MAX_PLAYER_HEALTH = 30;
+
 function CreateSprites(): [number, number][] {
-    let sprites:[number, number][] = new Array(MAX_SPRITES);
+    let sprites: [number, number][] = new Array(MAX_SPRITES);
     sprites[PLAYER] = [2, 2];
     sprites[THINCAMEL] = [0, 1];
     sprites[NORMALCAMEL] = [8, 9];

@@ -205,7 +205,7 @@ class GraphicsComponent {
         this.spriteCoords.length = cols * rows;
         for (let y = 0; y < rows; y++) {
             for (let x = 0; x < cols; x++) {
-                this.spriteCoords[y * cols + x] = [ x * 8, y * 8 ];
+                this.spriteCoords[y * cols + x] = [x * 8, y * 8];
             }
         }
     }
@@ -274,10 +274,10 @@ class GraphicsComponent {
         }
     }
 
-    drawBox(x: number, y: number, color: string) {
+    drawBox(x: number, y: number, color: string, size: number = 4) {
         let g = this.context;
         g.fillStyle = color || 'black';
-        g.fillRect(x-2, y-2, 4, 4);
+        g.fillRect(x - (size / 2), y - (size / 2), size, size);
     }
 
     get canvas(): HTMLCanvasElement {

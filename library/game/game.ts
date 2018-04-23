@@ -2,12 +2,15 @@
 /// <reference path="../libxor/LibXOR.ts" />
 /// <reference path="../libxor/State.ts" />
 /// <reference path="Common.ts" />
+/// <reference path="SharedState.ts" />
 /// <reference path="AdventureGame.ts" />
 /// <reference path="ActionGame.ts" />
 
 
 class Game {
     XOR: LibXOR;
+
+    sharedState: SharedState;
     actionGame: ActionGame;
     adventureGame: AdventureGame;
 
@@ -30,8 +33,9 @@ class Game {
         this.XOR = new LibXOR(640, 512);
         this.states = new StateMachine(this.XOR);
 
-        this.actionGame = new ActionGame(this.XOR);
-        this.adventureGame = new AdventureGame(this.XOR);
+        this.sharedState = new SharedState();
+        this.actionGame = new ActionGame(this.XOR, this.sharedState);
+        this.adventureGame = new AdventureGame(this.XOR, this.sharedState);
 
         this.gameover = true;
         this.gamelevel = 1;
@@ -83,6 +87,12 @@ class Game {
         XOR.Sounds.queueSound('kickaccent', 'assets/sounds/E12KICKACCENT.wav');
         XOR.Sounds.queueSound('rimshot', 'assets/sounds/E12RIMSHOT.wav');
         XOR.Sounds.queueSound('snare', 'assets/sounds/E12SNARE.wav');
+        XOR.Sounds.queueSound('missile', "assets/sounds/E32SPACEDRUM.wav");
+        XOR.Sounds.queueSound('death', 'assets/sounds/E32SNAP.wav');
+        XOR.Sounds.queueSound('cameldeath', 'assets/sounds/cameldie.wav');
+        XOR.Sounds.queueSound('item', 'assets/sounds/E32HIHAT2.wav')
+
+
 
         g.resizeTiles(64, 64, 4);
 
@@ -101,9 +111,7 @@ class Game {
         let XOR = this.XOR;
         let g = this.XOR.Graphics;
 
-        if (which == 1) {
-            XOR.Music.play(0);
-        }
+
         this.gamelevel = which;
         this.states.push("MAINMENU", "", 0);
         //this.states.push("ACTIONGAME", "INIT", 0);
@@ -126,20 +134,20 @@ class Game {
     stateMainMenu(): boolean {
         let XOR = this.XOR;
         if (this.states.topName == "MAINMENU") {
-            XOR.Music.fadeOut(0, 0.95);
             if (XOR.Input.getkey(KEY_START)) {
                 this.changelevel(1);
             }
             return true;
         } else {
-            XOR.Music.fadeIn(0, 0.05);
         }
         return false;
     }
 
     checkGameModeAskToQuit(): boolean {
         let XOR = this.XOR;
-        if (this.states.topAlt == "PLAY") {
+        if (this.states.topAlt == "PLAY"
+            && this.adventureGame.states.topAlt != "GETCHOICE"
+            && this.adventureGame.states.topAlt != "GETQUANTITY") {
             if (XOR.Input.getkey(KEY_BACK)) {
                 this.states.push("ASKTOQUIT", "INIT", 0);
                 this.states.push("ASKTOQUIT", "PAUSE", 0.5);
@@ -186,35 +194,33 @@ class Game {
         this.states.update(tInSeconds);
         XOR.update(tInSeconds);
 
-        this.actionGame.playerLocation.copy(XOR.Input.lastClick);
-
         if (this.statePause()) return;
         if (this.stateMainMenu()) return;
         if (this.stateAskToQuit()) return;
         if (this.checkGameModeAskToQuit()) return;
 
-        XOR.Music.setVolume(1, (1.0 - XOR.Music.getVolume(0)) * 0.25 + 0.15);
-        if (XOR.Music.ended(0)) XOR.Music.play(0);
-        if (XOR.Music.ended(1)) XOR.Music.play(1);
+        let currentTrack = 0;
+        if (this.states.topName == "ADVENTUREGAME")
+            currentTrack = 2;
+        if (this.states.topName == "ACTIONGAME")
+            currentTrack = 3;
 
-        if (this.getTimeredKey(KEY_RIGHT)) {
-            XOR.Sounds.playSound('snare')
+        XOR.Music.fadeIn(currentTrack, 0.05);
+        if (XOR.Music.ended(currentTrack)) XOR.Music.play(currentTrack);
+
+        for (let i = 0; i < 4; i++) {
+            if (currentTrack == i) continue;
+            XOR.Music.fadeOut(i, 0.05);
+            //if (XOR.Music.getVolume(i) < 0.1) XOR.Music.stop(i);
         }
-        if (this.getTimeredKey(KEY_LEFT)) {
-            XOR.Sounds.playSound('kick')
-        }
-        if (this.getTimeredKey(KEY_UP)) {
-            XOR.Sounds.playSound('rimshot')
-        }
-        if (this.getTimeredKey(KEY_RIGHT)) {
-            XOR.Sounds.playSound('kickaccent')
-        }
+
 
         if (this.stateActionGame() && this.states.topAlt == "PLAY") {
             if (this.actionGame.lost) {
                 this.states.pop();
-                this.states.push("ACTIONGAME", "INIT", 0);
+                this.states.push("MAINMENU", "", 0);
                 this.states.push("ACTIONGAME", "LOST", 4);
+                XOR.Music.play(0);
             }
             else if (this.actionGame.won) {
                 this.states.pop();
@@ -222,6 +228,7 @@ class Game {
                 this.adventureGame.start();
                 this.readySetGo();
                 this.states.push("ACTIONGAME", "WON", 4);
+                XOR.Music.play(1);
             }
             this.actionGame.update();
             return;
@@ -229,16 +236,20 @@ class Game {
         if (this.stateAdventureGame() && this.states.topAlt == "PLAY") {
             if (this.adventureGame.lost) {
                 this.states.pop();
-                this.states.push("ADVENTUREGAME", "LOST", 4);
                 this.states.push("MAINMENU", "", 0);
+                this.states.push("ADVENTUREGAME", "LOST", 4);
+                XOR.Music.play(0);
             }
             else if (this.adventureGame.won) {
                 this.states.pop();
                 this.states.push("MAINMENU", "", 0);
                 this.states.push("ADVENTUREGAME", "WON", 4);
+                XOR.Music.play(1);
             }
             else if (this.adventureGame.timeForAction) {
-                this.states.push("ACTIONGAME", "INIT", 0);
+                this.states.push("ACTIONGAME", "PLAY", 0);
+                this.actionGame.start();
+                this.readySetGo();
             }
             else {
                 this.adventureGame.update();
@@ -313,11 +324,6 @@ class Game {
 
     draw2doverlay() {
         let g = this.XOR.Graphics;
-        if (this.states.topName != "ADVENTUREGAME") {
-            g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
-            g.putTextAligned(this.states.topAlt, 'white', -1, -1, 0, 32);
-            g.putTextAligned("Time: " + Math.ceil(this.XOR.t1 - this.states.topTime), 'white', -1, -1, 0, 64);
-        }
         if (this.states.topName == "MAINMENU") {
             let font = g.context.font
             g.context.font = "64px Salsbury,EssentialPragmataPro,sans-serif";
@@ -341,22 +347,38 @@ class Game {
             g.putTextAligned('SET!', 'yellow', 0, 0, 0, 0);
         }
         if (this.states.topAlt == "GO") {
-            g.putTextAligned('GO!!!', 'green', 0, 0, 0, 0);
+            g.putTextAligned('GO!!!', 'lime', 0, 0, 0, 0);
         }
 
         if (this.states.topName == "ACTIONGAME") {
             this.actionGame.draw2doverlay(g);
             if (this.states.topAlt == "WON") {
-                g.putTextAligned("YOU WON THIS ROUND!!!", 'red', 0, 0, 0, 0);
+                g.putTextAligned("YAY! YOU WON THIS ROUND!!!", 'red', 0, 0, 0, 0);
             }
             if (this.states.topAlt == "LOST") {
-                g.putTextAligned("YOU LOST THIS ROUND!!!", 'red', 0, 0, 0, 0);
+                g.putTextAligned("OH NO! YOU LOST!!!", 'red', 0, 0, 0, 0);
             }
         }
 
         if (this.states.topName == "ADVENTUREGAME") {
             this.adventureGame.draw2doverlay(g);
+            if (this.states.topAlt == "WON") {
+                g.putTextAligned("YAY! YOU WON THE GAME!!!", 'red', 0, 0, 0, 0);
+            }
+            if (this.states.topAlt == "LOST") {
+                g.putTextAligned("OH NO! YOU LOST!!!", 'red', 0, 0, 0, 0);
+            }
         }
+
+        // let debug = true;
+        // if (debug) {
+        //     g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
+        //     g.putTextAligned(this.states.topAlt, 'white', -1, -1, 0, 32);
+        //     g.putTextAligned("Time: " + Math.ceil(this.XOR.t1 - this.states.topTime), 'white', -1, -1, 0, 64);
+        //     for (let i = 0; i < 4; i++) {
+        //         g.putTextAligned("" + this.XOR.Music.getVolume(i).toFixed(2), "white", 0, 0, 0, i * 32);
+        //     }
+        // }
     }
 
     setInstructions() {

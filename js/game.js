@@ -1148,6 +1148,10 @@ var GTE;
         return Math.random() * (b - a + 1) + a;
     }
     GTE.random = random;
+    function dice(sides) {
+        return (Math.random() * sides + 1) | 0;
+    }
+    GTE.dice = dice;
     function rand01() {
         return Math.random();
     }
@@ -3805,10 +3809,10 @@ const TERRAIN_START = SNOW;
 const TERRAIN_END = ROCK;
 const ENEMY_START = SCORPION;
 const ENEMY_END = SNAKE;
-const MAX_CAMELS = 16;
+const MAX_CAMELS = 64;
 const MAX_ENEMIES = 32;
 const MAX_KIBBLES = 128;
-const MAX_TERRAIN = 32;
+const MAX_TERRAIN = 16;
 const MAX_MISSILES = 4;
 const KIBBLES_PER_EXPLOSION = 16;
 const KIBBLE_SPEED = 64;
@@ -3816,6 +3820,8 @@ const KIBBLE_GRAVITY = 16;
 const ENEMY_SPEED = 32;
 const MISSILE_SPEED = 512;
 const PLAYER_SPEED = 128;
+const SIM_TIME_PER_STEP = 0.5;
+const MAX_PLAYER_HEALTH = 30;
 function CreateSprites() {
     let sprites = new Array(MAX_SPRITES);
     sprites[PLAYER] = [2, 2];
@@ -3846,8 +3852,9 @@ function CreateSprites() {
 }
 /// <reference path="./Common.ts" />
 class ActionGame {
-    constructor(XOR) {
+    constructor(XOR, sharedState) {
         this.XOR = XOR;
+        this.sharedState = sharedState;
         this.camels = new Array(MAX_CAMELS);
         this.player = new Sprite(PLAYER);
         this.enemies = new Array(MAX_ENEMIES);
@@ -3855,29 +3862,28 @@ class ActionGame {
         this.terrain = new Array(MAX_TERRAIN);
         this.missiles = new Array(MAX_MISSILES);
         this.lastKibble = Vector3.make(0, 0, 0);
+        this.missileCount = 0;
         this.animframe = 0;
-        this.numCamels = 0;
-        this.numEnemies = 0;
-        this.score = 0;
-        this.camelLocation = Vector3.make(64, 256, 0);
-        this.playerLocation = Vector3.make(64, 256, 0);
+        //numCamels: number = 0;
+        //numEnemies: number = 0;
+        //score: number = 0;
+        this.camelSpawnLocation = Vector3.make(64, 256, 0);
+        this.playerSpawnLocation = Vector3.make(64, 256, 0);
         this.playerField = Vector2.make(64, 192);
+        this.lastDeathPosition = Vector2.make(-100, 0);
         this.sprites = CreateSprites();
         this.init();
     }
     init() {
-        this.score = 0;
-        this.numCamels = 0;
-        this.numEnemies = 0;
+        this.sharedState.score = 0;
         this.animframe = 0;
         this.player = new Sprite(this.sprites[PLAYER][0]);
         this.player.position.reset(64 + GTE.rand1() * this.playerField.x, this.XOR.height / 2 + GTE.rand1() * this.playerField.y);
         for (let i = 0; i < MAX_CAMELS; i++) {
             this.camels[i] = new Sprite(0);
-            this.camels[i].alive = GTE.random(1, 5) | 0;
-            this.numCamels++;
-            this.camels[i].position.x = this.camelLocation.x + GTE.random(-32, 32);
-            this.camels[i].position.y = this.camelLocation.y + GTE.random(-128, 128);
+            this.camels[i].alive = GTE.dice(5) | 0;
+            this.camels[i].position.x = this.camelSpawnLocation.x + GTE.random(-32, 32);
+            this.camels[i].position.y = this.camelSpawnLocation.y + GTE.random(-128, 128);
         }
         for (let i = 0; i < MAX_ENEMIES; i++) {
             this.enemies[i] = new Sprite(0);
@@ -3885,7 +3891,6 @@ class ActionGame {
             this.enemies[i].alive = 0;
             this.enemies[i].position.x = GTE.random(this.XOR.width, 2 * this.XOR.width);
             this.enemies[i].position.y = GTE.random(0, this.XOR.height - 32);
-            this.numEnemies++;
         }
         for (let i = 0; i < MAX_KIBBLES; i++) {
             this.kibbles[i] = new Sprite(31);
@@ -3895,20 +3900,56 @@ class ActionGame {
             this.missiles[i].alive = 0;
             this.missiles[i].velocity.reset(PLAYER_SPEED * 4, 0);
         }
+        for (let i = 0; i < MAX_TERRAIN; i++) {
+            this.terrain[i] = new Sprite(0);
+            this.terrain[i].alive = 0;
+        }
+    }
+    start() {
+        this.XOR.Music.play(3);
+        this.lastDeathPosition = Vector2.make(-100, 0);
+        for (let i = 0; i < MAX_CAMELS; i++) {
+            this.camels[i] = new Sprite(0);
+            this.camels[i].alive = (i < this.sharedState.numCamels) ? GTE.dice(5) : 0;
+            this.camels[i].position.x = this.camelSpawnLocation.x + GTE.random(-32, 32);
+            this.camels[i].position.y = this.camelSpawnLocation.y + GTE.random(-128, 128);
+        }
+        for (let i = 0; i < MAX_ENEMIES; i++) {
+            this.enemies[i].alive = 0;
+            this.enemies[i].position.x = -64;
+            if (i < this.sharedState.numEnemies) {
+                this.enemies[i].alive = 1;
+                if (this.sharedState.currentStepOfJourney >= 3) {
+                    this.enemies[i].alive++;
+                }
+                if (this.sharedState.currentStepOfJourney >= 6) {
+                    this.enemies[i].alive++;
+                }
+                if (this.sharedState.currentStepOfJourney >= 9) {
+                    this.enemies[i].alive++;
+                }
+            }
+        }
+        for (let i = 0; i < MAX_KIBBLES; i++) {
+            this.kibbles[i].alive = 0;
+        }
+        for (let i = 0; i < MAX_MISSILES; i++) {
+            this.missiles[i].alive = 0;
+        }
+        for (let i = 0; i < MAX_TERRAIN; i++) {
+            this.terrain[i].alive = 0;
+        }
+        this.player.alive = this.sharedState.numHealthPoints;
     }
     get lost() {
-        if (this.player.alive <= 0)
-            return true;
-        if (this.numCamels <= 0)
-            return true;
-        return false;
+        return this.sharedState.lost;
     }
     get won() {
-        if (this.player.alive <= 0)
+        if (this.sharedState.lost)
             return false;
-        if (this.numCamels <= 0)
-            return false;
-        if (this.numEnemies > 0)
+        if (this.sharedState.won)
+            return true;
+        if (this.sharedState.numEnemies > 0)
             return false;
         return true;
     }
@@ -3927,22 +3968,32 @@ class ActionGame {
     startMissile(x, y, dir) {
         let alive = this.XOR.t1;
         let best = 0;
+        this.missileCount = 0;
         for (let i = 0; i < this.missiles.length; i++) {
             let missile = this.missiles[i];
             if (missile.alive <= 0) {
                 best = i;
-                break;
             }
-            if (alive > missile.timealive) {
-                best = i;
-                alive = missile.timealive;
+            if (missile.alive) {
+                this.missileCount++;
             }
+            // if (alive > missile.timealive) {
+            //     this.missileCount--;
+            //     missile.alive = 0;
+            //     best = i;
+            //     alive = missile.timealive;
+            //     break;
+            // }
         }
+        if (this.missileCount >= this.sharedState.numMissiles)
+            return;
         let missile = this.missiles[best];
         missile.position.reset(x, y);
         let v = dir.norm().mul(MISSILE_SPEED);
         missile.velocity.reset(v.x, v.y);
         missile.alive = 1;
+        this.missileCount++;
+        this.XOR.Sounds.playSound('missile');
     }
     update() {
         let t1 = this.XOR.t1 * 3.14159;
@@ -3952,6 +4003,7 @@ class ActionGame {
         this.updatePlayer(t1);
         this.updateKibbles(t1);
         this.updateMissiles(t1);
+        this.updateTerrain(t1);
     }
     updatePlayer(t1) {
         let dx = this.XOR.Input.getkey2(KEY_LEFT, KEY_RIGHT);
@@ -3961,11 +4013,17 @@ class ActionGame {
         this.player.velocity.y = dir.y;
         this.player.velocity = this.player.velocity.norm().mul(PLAYER_SPEED * this.XOR.dt);
         this.player.position = this.player.position.add(this.player.velocity);
+        this.player.position.x = GTE.clamp(this.player.position.x, 16, this.XOR.width - 16);
+        this.player.position.y = GTE.clamp(this.player.position.y, 32, this.XOR.height - 32);
         for (let i = 0; i < this.enemies.length; i++) {
             let enemy = this.enemies[i];
             if (this.player.collides(enemy, 32)) {
                 this.startKibbles(this.player.x, this.player.y);
                 this.player.alive--;
+                this.sharedState.numHealthPoints--;
+                this.lastDeathPosition.x = this.player.x;
+                this.lastDeathPosition.y = this.player.y;
+                this.XOR.Timers.start("PLAYERSPAWN", 1);
                 this.player.position.x = this.XOR.width / 4 + GTE.rand1() * this.playerField.x;
                 this.player.position.y = this.XOR.height / 2 + GTE.rand1() * this.playerField.y;
             }
@@ -3974,7 +4032,6 @@ class ActionGame {
         if (XOR.Timers.ended("PLAYERSHOOT")) {
             if (XOR.Input.getkey(KEY_START) || XOR.Input.getkey(KEY_SELECT)) {
                 XOR.Timers.start("PLAYERSHOOT", 0.1);
-                XOR.Sounds.playSound("SNARE");
                 this.startMissile(this.player.x, this.player.y, Vector2.make(1, 0));
             }
         }
@@ -4001,8 +4058,9 @@ class ActionGame {
                     if (enemy.collides(camel, 24)) {
                         camel.alive--;
                         if (camel.alive <= 0) {
-                            this.numCamels--;
+                            this.sharedState.numCamels--;
                             this.startKibbles(camel.x, camel.y);
+                            this.XOR.Sounds.playSound('cameldeath');
                         }
                         enemy.alive--;
                         if (enemy.alive <= 0) {
@@ -4032,7 +4090,7 @@ class ActionGame {
                 enemy.alive = 1;
                 enemy.position.x = GTE.random(this.XOR.width, 2 * this.XOR.width);
                 enemy.position.y = GTE.random(0, this.XOR.height - 32);
-                let randomEnemySpeed = GTE.random(ENEMY_SPEED, 2 * ENEMY_SPEED);
+                let randomEnemySpeed = this.sharedState.enemySpeed * GTE.random(ENEMY_SPEED, 2 * ENEMY_SPEED);
                 enemy.velocity.x = -randomEnemySpeed;
                 enemy.velocity.y = GTE.random(-2, 2);
                 if (GTE.rand01() < 0.5) {
@@ -4070,20 +4128,105 @@ class ActionGame {
     updateMissiles(t1) {
         for (let i = 0; i < this.missiles.length; i++) {
             let missile = this.missiles[i];
-            if (missile.x > this.XOR.width * 1.5) {
+            if (missile.x > this.XOR.width) {
                 missile.alive = 0;
+                this.missileCount--;
             }
             if (missile.alive > 0) {
                 missile.move(this.XOR.dt);
                 missile.offset.y = GTE.oscillate(missile.random + t1, 1, 0, 3, 0);
                 for (let j = 0; j < this.enemies.length; j++) {
                     let enemy = this.enemies[j];
-                    if (enemy.alive && enemy.collides(missile, 16)) {
-                        this.numEnemies--;
+                    if (enemy.alive > 0 && enemy.collides(missile, 16)) {
+                        this.sharedState.numEnemies--;
+                        this.missileCount--;
                         missile.alive = 0;
-                        enemy.alive = 0;
-                        this.score += 100;
+                        enemy.alive--;
+                        this.sharedState.score += 100;
                         this.startKibbles(enemy.x, enemy.y);
+                        this.XOR.Sounds.playSound('snare');
+                    }
+                }
+            }
+        }
+    }
+    updateTerrain(t1) {
+        for (let i = 0; i < this.terrain.length; i++) {
+            let terrain = this.terrain[i];
+            if (terrain.alive <= 0) {
+                let type = GTE.dice(14);
+                switch (type) {
+                    case 1:
+                    case 2:
+                        terrain.index = RICEBOWL;
+                        break;
+                    case 3:
+                    case 4:
+                        terrain.index = RICESACK;
+                        break;
+                    case 5:
+                        terrain.index = HEART;
+                        break;
+                    case 6:
+                    case 7:
+                        terrain.index = RUBY;
+                        break;
+                    case 8:
+                    case 9:
+                        terrain.index = GOLD;
+                        break;
+                    default:
+                        terrain.index = GTE.random(TERRAIN_START, TERRAIN_END) | 0;
+                        break;
+                }
+                terrain.position.x = GTE.random(this.XOR.width, this.XOR.width * 2);
+                terrain.position.y = 32 + GTE.random(0, this.XOR.height - 64) | 0;
+                terrain.offset.x = 0;
+                terrain.offset.y = 0;
+                terrain.velocity.x = -32;
+                terrain.velocity.y = 0;
+                terrain.alive = 1;
+            }
+            if (terrain.alive > 0) {
+                terrain.move(this.XOR.dt);
+                if (terrain.collides(this.player, 32)) {
+                    // find out what the player just got
+                    switch (terrain.index) {
+                        case RICEBOWL:
+                            terrain.alive = 0;
+                            this.sharedState.numSacksOfFood += 0.5;
+                            break;
+                        case RICESACK:
+                            terrain.alive = 0;
+                            this.sharedState.numSacksOfFood += 2;
+                            break;
+                        case HEART:
+                            terrain.alive = 0;
+                            this.sharedState.numHealthPoints += 1;
+                            break;
+                        case RUBY:
+                            terrain.alive = 0;
+                            this.sharedState.numJewels += 100;
+                            break;
+                        case GOLD:
+                            terrain.alive = 0;
+                            this.sharedState.numJewels += 10;
+                            break;
+                    }
+                    if (terrain.alive > 0) {
+                        let dirto = terrain.dirto(this.player);
+                        if (dirto.length() < 32) {
+                            dirto = dirto.norm().mul(32);
+                            this.player.position.x = terrain.x + dirto.x;
+                            this.player.position.y = terrain.y + dirto.y;
+                            this.player.offset.reset(0, 0);
+                        }
+                    }
+                    else {
+                        this.XOR.Sounds.playSound('item');
+                    }
+                    if (terrain.x < -32) {
+                        terrain.alive = 0;
                     }
                 }
             }
@@ -4096,30 +4239,43 @@ class ActionGame {
             }
         }
         for (let i = 0; i < MAX_ENEMIES; i++) {
-            if (this.enemies[i].alive) {
+            if (this.enemies[i].alive > 0) {
                 g.drawSprite(this.enemies[i].index, this.enemies[i].position.x + this.enemies[i].offset.x, this.enemies[i].position.y + this.enemies[i].offset.y);
             }
         }
-        g.drawSprite(this.player.index, this.player.position.x + this.player.offset.x, this.player.position.y + this.player.offset.y);
+        for (let i = 0; i < MAX_TERRAIN; i++) {
+            let terrain = this.terrain[i];
+            if (terrain.alive > 0) {
+                let spriteIndex = this.sprites[terrain.index][this.animframe];
+                g.drawSprite(spriteIndex, terrain.x, terrain.y);
+            }
+        }
+        let left = this.XOR.Timers.timeleft("PLAYERSPAWN");
+        if (left > 0) {
+            let size = 48 * (2 - left);
+            g.drawBox(this.player.x, this.player.y, "yellow", size);
+        }
+        g.drawSprite(this.player.index, this.player.x, this.player.y);
+        g.drawSprite(3, this.lastDeathPosition.x, this.lastDeathPosition.y);
         for (let i = 0; i < MAX_MISSILES; i++) {
             let missile = this.missiles[i];
-            if (missile.alive) {
+            if (missile.alive > 0) {
                 g.drawSprite(missile.index, missile.x, missile.y);
             }
         }
         for (let i = 0; i < MAX_KIBBLES; i++) {
             let k = this.kibbles[i];
-            if (k.alive) {
-                //g.drawSprite(this.kibbles[i].index, this.kibbles[i].position.x, this.kibbles[i].position.y);
+            if (k.alive > 0) {
                 g.drawBox(k.position.x, k.position.y, 'black');
             }
         }
     }
     draw2doverlay(g) {
-        g.putTextAligned("Camels: " + this.numCamels, 'white', 1, -1, 0, 0);
-        g.putTextAligned("Enemies: " + this.numEnemies, 'white', -1, 1, 0, 0);
-        g.putTextAligned("Score " + this.score, 'white', 0, -1, 0, 0);
-        g.putTextAligned("Lives: " + this.player.alive, 'white', 1, 1, 0, 0);
+        g.putTextAligned("Missiles: " + (this.sharedState.numMissiles - this.missileCount), 'white', -1, -1, 0, 0);
+        g.putTextAligned("Camels: " + this.sharedState.numCamels, 'white', 1, -1, 0, 0);
+        g.putTextAligned("Enemies: " + this.sharedState.numEnemies, 'white', -1, 1, 0, 0);
+        g.putTextAligned("Score " + this.sharedState.score, 'white', 0, -1, 0, 0);
+        g.putTextAligned("Lives: " + this.sharedState.numHealthPoints, 'white', 1, 1, 0, 0);
     }
 }
 const INITIAL_CAMELS = 16;
@@ -4132,23 +4288,23 @@ const MAX_MARKET_ITEMS = 3;
 const SCENARIO_CAMEL = 0;
 const SCENARIO_HEALTH = 1;
 const SCENARIO_FOOD = 2;
+const SCENARIO_LUCK = 3;
+function plural(x) {
+    if (x == 1)
+        return "";
+    return "s";
+}
 class AdventureGame {
-    constructor(XOR) {
+    constructor(XOR, sharedState) {
         this.XOR = XOR;
-        this.milesTraveled = 0;
-        this.numCamels = 16;
-        this.numMedicines = 10;
-        this.numSacksOfFood = 5;
-        this.numJewels = 100;
-        this.playerHealth = 5;
+        this.sharedState = sharedState;
         this.numTurns = 0;
         this.currentChoice = 0;
         this.currentQuantity = 0;
         this.currentScenario = 0;
         this.currentScenarioDescription = "";
-        this.maxQuantity = 10;
+        this.maxQuantity = 0;
         this.market = [];
-        this.currentStepOfJourney = 0;
         this.journeySteps = [
             "Acre",
             "Trebizond",
@@ -4166,27 +4322,31 @@ class AdventureGame {
         this.states = new StateMachine(XOR);
     }
     get lost() {
-        if (this.numCamels <= 0)
+        if (this.sharedState.numCamels <= 0)
             return true;
-        if (this.playerHealth <= 0)
+        if (this.sharedState.numHealthPoints <= 0)
             return true;
         return false;
     }
     get won() {
-        if (this.milesTraveled > MILES_TO_TRAVEL)
+        if (this.sharedState.milesTraveled > MILES_TO_TRAVEL)
             return true;
         return false;
     }
     get timeForAction() {
-        if (this.numTurns > 20)
+        if (this.numTurns > 10) {
+            this.sharedState.numEnemies = 25 + GTE.dice(this.sharedState.currentStepOfJourney * 2 + 5);
+            this.sharedState.enemySpeed = 1 + GTE.dice(this.sharedState.currentStepOfJourney / 2);
             return true;
+        }
         return false;
     }
     init() {
-        this.milesTraveled = 0;
-        this.numCamels = INITIAL_CAMELS;
-        this.playerHealth = INITIAL_HEALTH;
-        this.currentStepOfJourney = 0;
+        this.sharedState.milesTraveled = 0;
+        this.sharedState.numCamels = INITIAL_CAMELS;
+        this.sharedState.numHealthPoints = INITIAL_HEALTH;
+        this.sharedState.currentStepOfJourney = 0;
+        this.sharedState.numCamels = 16;
         this.market = [0, 0, 0];
         this.lines = [
             "You are setting out on a fantastic",
@@ -4196,9 +4356,10 @@ class AdventureGame {
             "",
             "Yay!"
         ];
-        this.XOR.Timers.start("simwait", 4);
+        this.XOR.Timers.start("simwait", SIM_TIME_PER_STEP);
     }
     start() {
+        this.XOR.Music.play(2);
         this.numTurns = 0;
         this.states.push("SIM", "", 0);
     }
@@ -4226,33 +4387,38 @@ class AdventureGame {
         }
         if (this.states.topAlt == "GETCHOICE") {
             if (XOR.Timers.ended("GETKEY")) {
-                let dy = XOR.Input.getkey2(KEY_UP, KEY_DOWN);
+                let dy = XOR.Input.getkey2(KEY_UP, KEY_DOWN) + XOR.Input.gamepadStick1.y;
+                dy = GTE.clamp(dy, -1, 1);
                 if (dy != 0) {
                     this.currentChoice = GTE.clamp(this.currentChoice + dy, 0, 3);
+                    XOR.Sounds.playSound("rimshot");
                     XOR.Input.clearkeys();
                     XOR.Timers.start("GETKEY", 0.25);
                 }
-                if (XOR.Input.getkey(KEY_START)) {
+                if (XOR.Input.getkey(KEY_START) || XOR.Input.gamepadButtons[0]) {
                     this.chooseQuantity();
                     XOR.Input.clearkeys();
                     XOR.Timers.start("GETKEY", 0.25);
+                    XOR.Sounds.playSound("rimshot");
                 }
             }
+            return;
         }
         if (this.states.topAlt == "GETQUANTITY") {
             if (XOR.Timers.ended("GETKEY")) {
-                let dy = XOR.Input.getkey2(KEY_DOWN, KEY_UP);
+                let dy = XOR.Input.getkey2(KEY_DOWN, KEY_UP) + XOR.Input.gamepadStick1.y;
+                dy = GTE.clamp(dy, -1, 1);
                 if (dy != 0) {
                     this.currentQuantity = GTE.clamp(this.currentQuantity + dy, 0, this.maxQuantity);
                     XOR.Input.clearkeys();
                     XOR.Timers.start("GETKEY", 0.2);
                 }
-                if (XOR.Input.getkey(KEY_START)) {
+                if (XOR.Input.getkey(KEY_START) || XOR.Input.gamepadButtons[0]) {
                     this.makePurchase();
                     XOR.Input.clearkeys();
                     XOR.Timers.start("GETKEY", 0.2);
                 }
-                if (XOR.Input.getkey(KEY_BACK)) {
+                if (XOR.Input.getkey(KEY_BACK) || XOR.Input.gamepadButtons[1]) {
                     this.states.pop();
                     return;
                 }
@@ -4263,13 +4429,13 @@ class AdventureGame {
         if (this.states.topName == "STATUS") {
             switch (this.currentChoice) {
                 case 0:
-                    this.maxQuantity = Math.floor(this.numJewels / this.market[CAMELS]);
+                    this.maxQuantity = Math.floor(this.sharedState.numJewels / this.market[CAMELS]);
                     break;
                 case 1:
-                    this.maxQuantity = Math.floor(this.numJewels / this.market[MEDICINES]);
+                    this.maxQuantity = Math.floor(this.sharedState.numJewels / this.market[MEDICINES]);
                     break;
                 case 2:
-                    this.maxQuantity = Math.floor(this.numJewels / this.market[SACKSOFFOOD]);
+                    this.maxQuantity = Math.floor(this.sharedState.numJewels / this.market[SACKSOFFOOD]);
                     break;
                 case 3:
                     this.continueJourney();
@@ -4280,22 +4446,21 @@ class AdventureGame {
         }
     }
     buyCamels() {
-        this.numCamels += this.currentQuantity;
-        this.numJewels -= this.currentQuantity * this.market[CAMELS];
+        this.sharedState.numCamels += this.currentQuantity;
+        this.sharedState.numJewels -= this.currentQuantity * this.market[CAMELS];
     }
     buyMedicine() {
-        this.numMedicines += this.currentQuantity;
-        this.numJewels -= this.currentQuantity * this.market[MEDICINES];
+        this.sharedState.numMedicines += this.currentQuantity;
+        this.sharedState.numJewels -= this.currentQuantity * this.market[MEDICINES];
     }
     buyFood() {
-        this.numSacksOfFood += this.currentQuantity;
-        this.numJewels -= this.currentQuantity * this.market[SACKSOFFOOD];
+        this.sharedState.numSacksOfFood += this.currentQuantity;
+        this.sharedState.numJewels -= this.currentQuantity * this.market[SACKSOFFOOD];
     }
     continueJourney() {
-        this.numTurns++;
         this.states.clear();
         this.states.push("SIM", "", 0);
-        this.XOR.Timers.start("simwait", 2);
+        this.XOR.Timers.start("simwait", SIM_TIME_PER_STEP);
     }
     makePurchase() {
         if (this.states.topName == "STATUS") {
@@ -4319,6 +4484,9 @@ class AdventureGame {
             this.states.push("SCENARIO", "", 0);
             this.states.push("SCENARIO", "GETCHOICE", 0);
             this.currentScenario = GTE.random(0, 2) | 0;
+            if (GTE.dice(6) > 3) {
+                this.currentScenario = SCENARIO_LUCK;
+            }
             switch (this.currentScenario) {
                 case SCENARIO_CAMEL:
                     this.createCamelScenario();
@@ -4329,6 +4497,9 @@ class AdventureGame {
                 case SCENARIO_FOOD:
                     this.createFoodScenario();
                     break;
+                case SCENARIO_LUCK:
+                    this.createLuckScenario();
+                    break;
             }
             this.lines.push("");
             this.lines.push("Press ENTER to continue");
@@ -4337,51 +4508,142 @@ class AdventureGame {
         }
     }
     createCamelScenario() {
-        let lostCamels = GTE.random(1, Math.min(this.numCamels, 3)) | 0;
-        this.numCamels -= lostCamels;
+        let lostCamels = GTE.random(1, Math.min(this.sharedState.numCamels, 3)) | 0;
+        this.sharedState.numCamels -= lostCamels;
         let adverbs = ["unfortunate", "unthinkable", "improbable"];
         this.lines = [
             "Your camels suffered an " + adverbs[GTE.random(0, 2) | 0],
-            "accident. You lost " + lostCamels + " camels."
+            "accident. You lost " + lostCamels + " camel" + plural(lostCamels) + "."
         ];
     }
     createHealthScenario() {
-        let lostHealth = GTE.random(1, Math.min(this.playerHealth, 3)) | 0;
-        this.playerHealth -= lostHealth;
+        let lostHealth = GTE.random(1, Math.min(this.sharedState.numHealthPoints, 3)) | 0;
+        this.sharedState.numHealthPoints -= lostHealth;
         ;
         let issues = ["E. coli", "tapeworms", "the flu", "botulism"];
         this.lines = [
             "You got sick with " + issues[GTE.random(0, issues.length - 1) | 0] + ".",
-            "You lost " + lostHealth + " health points.",
-            "You have " + this.playerHealth + " health points left."
+            "You lost " + lostHealth + " health point" + plural(lostHealth) + ".",
+            "You have " + this.sharedState.numHealthPoints + " health point" + plural(this.sharedState.numHealthPoints) + " left."
         ];
     }
     createFoodScenario() {
-        let lostFood = GTE.random(1, Math.min(this.numSacksOfFood, 3)) | 0;
-        this.numSacksOfFood -= lostFood;
-        let issues = ["contamination", "camel spit", "bug infestation", "spoilage"];
+        let ss = this.sharedState;
+        let lostFood = GTE.dice(3);
+        if (lostFood > ss.numSacksOfFood) {
+            lostFood = ss.numSacksOfFood;
+        }
+        if (lostFood == 0) {
+            this.lines = [
+                "Thieves came to steal your food,",
+                "but you have none!",
+                ""
+            ];
+            if (GTE.rand01() < 0.1) {
+                this.lines.push("They feel bad for you and give you");
+                this.lines.push("a stolen sack from a rich man they");
+                this.lines.push("robbed earlier.");
+                ss.numSacksOfFood++;
+            }
+            return;
+        }
+        this.sharedState.numSacksOfFood -= lostFood;
+        this.sharedState.numSacksOfFood = GTE.clamp(this.sharedState.numSacksOfFood, 0, 1000);
+        let issues = ["thieves", "camel spit", "worms", "spoilage"];
         this.lines = [
             "Some food was lost due to " + issues[GTE.random(0, issues.length - 1) | 0] + ".",
-            "You lost " + lostFood + " sacks of food.",
-            "You have " + this.numSacksOfFood + " sacks of food remaining."
+            "You lost " + lostFood.toFixed(2) + " sack" + plural(lostFood) + " of food.",
+            "You have " + this.sharedState.numSacksOfFood.toFixed(2) + " sack" + plural(this.sharedState.numSacksOfFood) + " of food remaining."
         ];
     }
+    createLuckScenario() {
+        let gainedHealth = 0;
+        let gainedJewels = 0;
+        let gainedMissile = 0;
+        let ss = this.sharedState;
+        let roll = GTE.dice(4);
+        if (roll == 1 && GTE.rand01() < 0.05) {
+            if (ss.numMissiles < MAX_MISSILES - 1) {
+                gainedMissile++;
+                ss.numMissiles++;
+                this.lines = [
+                    "Hooray! You have found a new missile. This",
+                    "should make defending the camels a bit easier."
+                ];
+            }
+        }
+        else if (roll == 2) {
+            if (ss.numHealthPoints < 20 && GTE.rand01() < 0.5) {
+                let chance = GTE.rand01();
+                if (chance < 0.01) {
+                    gainedHealth = MAX_PLAYER_HEALTH - ss.numHealthPoints;
+                }
+                else if (chance < 0.5) {
+                    gainedHealth = GTE.dice(5);
+                }
+                if (gainedHealth > 0) {
+                    this.lines = [
+                        "That was a great night's rest! Your",
+                        "health went up " + gainedHealth + " point" + plural(gainedHealth) + "."
+                    ];
+                }
+            }
+        }
+        else if (roll == 3) {
+            if (ss.numJewels < 1000) {
+                let chance = GTE.rand01();
+                if (chance < 0.01) {
+                    gainedJewels += GTE.random(100, 500) | 0;
+                }
+                else if (chance < 0.1) {
+                    gainedJewels += GTE.random(50, 75) | 0;
+                }
+                else if (chance < 0.5) {
+                    gainedJewels += GTE.random(10, 20) | 0;
+                }
+                ss.numJewels += gainedJewels;
+                this.lines = [
+                    "You stumble upon some treasure.",
+                    "You found " + gainedJewels + " jewels."
+                ];
+            }
+        }
+        if (gainedHealth == 0 && gainedJewels == 0 && gainedMissile == 0) {
+            let strings = [
+                "You admire the lovely landscape.",
+                "That was a really nice butterfly.",
+                "Wow, camels really like to spit!",
+                "It sure is a hot day! I'm thirsty!",
+                "You really miss the gondolas.",
+                "Wow, this scenary is incredible!",
+                "You admire a flowing brook.",
+                "Is it really the 13th century?",
+                this.journeySteps[ss.currentStepOfJourney] + " is nice to visit!",
+                "The citizens of " + this.journeySteps[ss.currentStepOfJourney] + " hate you!",
+                "You stop to feed your " + ss.numCamels + " camel" + plural(ss.numCamels) + "."
+            ];
+            this.lines = [
+                strings[GTE.random(0, strings.length - 1) | 0]
+            ];
+        }
+    }
     status() {
+        let ss = this.sharedState;
         if (this.states.topName != "STATUS") {
             this.states.pop();
             this.states.push("STATUS", "", 0);
             this.states.push("STATUS", "GETCHOICE", 0);
         }
         this.lines = [
-            "You have traveled " + this.milesTraveled + " miles.",
-            "The province of " + this.journeySteps[this.currentStepOfJourney] + " is nearby.",
+            "You have traveled " + this.sharedState.milesTraveled + " miles.",
+            "The province of " + this.journeySteps[ss.currentStepOfJourney] + " is nearby.",
             "",
             "Status",
             "-----------------  Owned",
-            " Number of camels  " + this.numCamels,
-            " Health            " + this.playerHealth,
-            " Sacks of Food     " + this.numSacksOfFood,
-            " Jewels            " + this.numJewels,
+            " Number of camels  " + this.sharedState.numCamels,
+            " Health/Medicines  " + this.sharedState.numHealthPoints + "/" + this.sharedState.numMedicines,
+            " Sacks of Food     " + this.sharedState.numSacksOfFood.toFixed(2),
+            " Jewels            " + this.sharedState.numJewels,
             "",
             "What would you like to do?",
             "    Buy Camels",
@@ -4391,16 +4653,37 @@ class AdventureGame {
         ];
     }
     sim() {
+        let ss = this.sharedState;
         this.numTurns++;
-        this.milesTraveled += GTE.random(50, 60) | 0;
-        this.currentStepOfJourney = GTE.clamp(this.milesTraveled / (6000 / this.journeySteps.length), 0, this.journeySteps.length - 1) | 0;
-        let mix = this.milesTraveled / 6000.0;
+        this.sharedState.milesTraveled += GTE.random(50, 60) | 0;
+        this.sharedState.currentStepOfJourney = GTE.clamp(this.sharedState.milesTraveled / (6000 / this.journeySteps.length), 0, this.journeySteps.length - 1) | 0;
+        let mix = this.sharedState.milesTraveled / 6000.0;
         this.market = [
             GTE.lerp(GTE.random(9, 11), GTE.random(45, 55), mix) | 0,
             GTE.lerp(GTE.random(9, 11), GTE.random(20, 25), mix) | 0,
             GTE.lerp(GTE.random(9, 11), GTE.random(15, 25), mix) | 0 // FOOD
         ];
-        if (this.numTurns > 0 && GTE.rand01() < 0.18) {
+        // use medicine
+        if (this.sharedState.numHealthPoints < 5) {
+            if (this.sharedState.numMedicines > 0) {
+                this.sharedState.numHealthPoints++;
+                this.sharedState.numMedicines--;
+            }
+        }
+        // use food
+        if (this.sharedState.numSacksOfFood > 0) {
+            this.sharedState.numSacksOfFood -= (GTE.random(1, 10) | 0) / 10;
+            if (ss.numSacksOfFood < 0) {
+                ss.numSacksOfFood = 0;
+                if (GTE.rand01() < 0.5) {
+                    ss.numHealthPoints--;
+                }
+                if (GTE.rand01() < 0.1) {
+                    ss.numCamels--;
+                }
+            }
+        }
+        if (this.numTurns > 1 && GTE.rand01() < 0.5) {
             this.scenario();
         }
         else {
@@ -4607,8 +4890,8 @@ class Sprite {
     static DirTo(sprite1, sprite2) {
         if (!sprite1 || !sprite2)
             return Vector2.make(0, 0);
-        let dx = (sprite1.position.x + sprite1.offset.x) - (sprite2.position.x + sprite2.offset.x);
-        let dy = (sprite1.position.y + sprite1.offset.y) - (sprite2.position.y + sprite2.offset.y);
+        let dx = sprite1.x - sprite2.x;
+        let dy = sprite1.y - sprite2.y;
         return Vector2.make(-dx, -dy);
     }
 }
@@ -4866,10 +5149,10 @@ class GraphicsComponent {
                 this.drawSprite(sprite.index, sprite.position.x + sprite.offset.x, sprite.position.y + sprite.offset.y);
         }
     }
-    drawBox(x, y, color) {
+    drawBox(x, y, color, size = 4) {
         let g = this.context;
         g.fillStyle = color || 'black';
-        g.fillRect(x - 2, y - 2, 4, 4);
+        g.fillRect(x - (size / 2), y - (size / 2), size, size);
     }
     get canvas() {
         return this.canvasElement_;
@@ -4924,6 +5207,9 @@ const KEY_LEFT = 14;
 const KEY_RIGHT = 15;
 const KEY_UP = 12;
 const KEY_DOWN = 13;
+const KEY_LEFTCLICK = 20;
+const KEY_MIDDLECLICK = 21;
+const KEY_RIGHTCLICK = 22;
 class InputComponent {
     constructor() {
         this.wasdFormat = true;
@@ -4995,6 +5281,10 @@ class InputComponent {
                 this.gamepadSelect = gp.buttons[8].value;
                 this.gamepadStart = gp.buttons[9].value;
             }
+            // if (this.gamepadStick1.x < -0.5) this.setkey(KEY_LEFT, true);
+            // if (this.gamepadStick1.x > 0.5) this.setkey(KEY_RIGHT, true);
+            // if (this.gamepadStick1.y < -0.5) this.setkey(KEY_UP, true);
+            // if (this.gamepadStick1.y > 0.5) this.setkey(KEY_DOWN, true);
             let gpinfo = document.getElementById("gamepaddebug");
             if (gpinfo) {
                 gpinfo.innerText = "gamepad connected";
@@ -5006,14 +5296,29 @@ class InputComponent {
         e.preventDefault();
         v.x = e.offsetX;
         v.y = e.offsetY;
+        this.setmousebutton(e.button, true);
     }
     onmouseup(e, v) {
         e.preventDefault();
         v.x = e.offsetX;
         v.y = e.offsetY;
+        this.setmousebutton(e.button, false);
     }
     clearkeys() {
         this.buttons = 0;
+    }
+    setmousebutton(which, state) {
+        switch (which) {
+            case 0:
+                this.setkey(KEY_LEFTCLICK, state);
+                break;
+            case 1:
+                this.setkey(KEY_MIDDLECLICK, state);
+                break;
+            case 2:
+                this.setkey(KEY_RIGHTCLICK, state);
+                break;
+        }
     }
     setkey(which, state) {
         if (which < 0 || which >= 32)
@@ -5148,11 +5453,17 @@ class MusicComponent {
         this.musicElements = [];
         this.musicElements.push(document.createElement("audio"));
         this.musicElements.push(document.createElement("audio"));
-        this.musicElements[0].src = "assets/music/1hgj153.mp3";
-        this.musicElements[1].src = "assets/music/oceanwaves.mp3";
-        this.promises = [null, null];
+        this.musicElements.push(document.createElement("audio"));
+        this.musicElements.push(document.createElement("audio"));
+        this.musicElements[0].src = "assets/music/noise.mp3";
+        this.musicElements[1].src = "assets/music/maintheme.mp3";
+        this.musicElements[2].src = "assets/music/adventuretheme.mp3";
+        this.musicElements[3].src = "assets/music/arcadetheme.mp3";
+        this.promises = [null, null, null, null];
         this.musicElements[0].pause();
         this.musicElements[1].pause();
+        this.musicElements[2].pause();
+        this.musicElements[3].pause();
         this.currentPiece = -1;
         this.lastPiece = -1;
     }
@@ -5430,10 +5741,40 @@ class StateMachine {
         return "NONE";
     }
 }
+class SharedState {
+    constructor() {
+        this.milesTraveled = 0;
+        this.numCamels = 16;
+        this.numMedicines = 10;
+        this.numSacksOfFood = 5;
+        this.numJewels = 100;
+        this.numHealthPoints = 5;
+        this.numMissiles = 1;
+        this.score = 0;
+        this.numEnemies = 0;
+        this.enemySpeed = 1;
+        this.currentStepOfJourney = 0;
+    }
+    get lost() {
+        if (this.numHealthPoints <= 0)
+            return true;
+        if (this.numCamels <= 0)
+            return true;
+        return false;
+    }
+    get won() {
+        if (this.milesTraveled >= 6000)
+            return true;
+        if (this.numEnemies > 0)
+            return false;
+        return false;
+    }
+}
 /// <reference path="../gte/GTE.ts" />
 /// <reference path="../libxor/LibXOR.ts" />
 /// <reference path="../libxor/State.ts" />
 /// <reference path="Common.ts" />
+/// <reference path="SharedState.ts" />
 /// <reference path="AdventureGame.ts" />
 /// <reference path="ActionGame.ts" />
 class Game {
@@ -5451,8 +5792,9 @@ class Game {
         this.currentEnvironmentColor = 'lightbrown';
         this.XOR = new LibXOR(640, 512);
         this.states = new StateMachine(this.XOR);
-        this.actionGame = new ActionGame(this.XOR);
-        this.adventureGame = new AdventureGame(this.XOR);
+        this.sharedState = new SharedState();
+        this.actionGame = new ActionGame(this.XOR, this.sharedState);
+        this.adventureGame = new AdventureGame(this.XOR, this.sharedState);
         this.gameover = true;
         this.gamelevel = 1;
         this.score = 0;
@@ -5492,6 +5834,10 @@ class Game {
         XOR.Sounds.queueSound('kickaccent', 'assets/sounds/E12KICKACCENT.wav');
         XOR.Sounds.queueSound('rimshot', 'assets/sounds/E12RIMSHOT.wav');
         XOR.Sounds.queueSound('snare', 'assets/sounds/E12SNARE.wav');
+        XOR.Sounds.queueSound('missile', "assets/sounds/E32SPACEDRUM.wav");
+        XOR.Sounds.queueSound('death', 'assets/sounds/E32SNAP.wav');
+        XOR.Sounds.queueSound('cameldeath', 'assets/sounds/cameldie.wav');
+        XOR.Sounds.queueSound('item', 'assets/sounds/E32HIHAT2.wav');
         g.resizeTiles(64, 64, 4);
         if (XOR.Scenegraph) {
             let sg = XOR.Scenegraph;
@@ -5504,9 +5850,6 @@ class Game {
     changelevel(which) {
         let XOR = this.XOR;
         let g = this.XOR.Graphics;
-        if (which == 1) {
-            XOR.Music.play(0);
-        }
         this.gamelevel = which;
         this.states.push("MAINMENU", "", 0);
         //this.states.push("ACTIONGAME", "INIT", 0);
@@ -5526,20 +5869,20 @@ class Game {
     stateMainMenu() {
         let XOR = this.XOR;
         if (this.states.topName == "MAINMENU") {
-            XOR.Music.fadeOut(0, 0.95);
             if (XOR.Input.getkey(KEY_START)) {
                 this.changelevel(1);
             }
             return true;
         }
         else {
-            XOR.Music.fadeIn(0, 0.05);
         }
         return false;
     }
     checkGameModeAskToQuit() {
         let XOR = this.XOR;
-        if (this.states.topAlt == "PLAY") {
+        if (this.states.topAlt == "PLAY"
+            && this.adventureGame.states.topAlt != "GETCHOICE"
+            && this.adventureGame.states.topAlt != "GETQUANTITY") {
             if (XOR.Input.getkey(KEY_BACK)) {
                 this.states.push("ASKTOQUIT", "INIT", 0);
                 this.states.push("ASKTOQUIT", "PAUSE", 0.5);
@@ -5581,7 +5924,6 @@ class Game {
         let g = this.XOR.Graphics;
         this.states.update(tInSeconds);
         XOR.update(tInSeconds);
-        this.actionGame.playerLocation.copy(XOR.Input.lastClick);
         if (this.statePause())
             return;
         if (this.stateMainMenu())
@@ -5590,28 +5932,26 @@ class Game {
             return;
         if (this.checkGameModeAskToQuit())
             return;
-        XOR.Music.setVolume(1, (1.0 - XOR.Music.getVolume(0)) * 0.25 + 0.15);
-        if (XOR.Music.ended(0))
-            XOR.Music.play(0);
-        if (XOR.Music.ended(1))
-            XOR.Music.play(1);
-        if (this.getTimeredKey(KEY_RIGHT)) {
-            XOR.Sounds.playSound('snare');
-        }
-        if (this.getTimeredKey(KEY_LEFT)) {
-            XOR.Sounds.playSound('kick');
-        }
-        if (this.getTimeredKey(KEY_UP)) {
-            XOR.Sounds.playSound('rimshot');
-        }
-        if (this.getTimeredKey(KEY_RIGHT)) {
-            XOR.Sounds.playSound('kickaccent');
+        let currentTrack = 0;
+        if (this.states.topName == "ADVENTUREGAME")
+            currentTrack = 2;
+        if (this.states.topName == "ACTIONGAME")
+            currentTrack = 3;
+        XOR.Music.fadeIn(currentTrack, 0.05);
+        if (XOR.Music.ended(currentTrack))
+            XOR.Music.play(currentTrack);
+        for (let i = 0; i < 4; i++) {
+            if (currentTrack == i)
+                continue;
+            XOR.Music.fadeOut(i, 0.05);
+            //if (XOR.Music.getVolume(i) < 0.1) XOR.Music.stop(i);
         }
         if (this.stateActionGame() && this.states.topAlt == "PLAY") {
             if (this.actionGame.lost) {
                 this.states.pop();
-                this.states.push("ACTIONGAME", "INIT", 0);
+                this.states.push("MAINMENU", "", 0);
                 this.states.push("ACTIONGAME", "LOST", 4);
+                XOR.Music.play(0);
             }
             else if (this.actionGame.won) {
                 this.states.pop();
@@ -5619,6 +5959,7 @@ class Game {
                 this.adventureGame.start();
                 this.readySetGo();
                 this.states.push("ACTIONGAME", "WON", 4);
+                XOR.Music.play(1);
             }
             this.actionGame.update();
             return;
@@ -5626,16 +5967,20 @@ class Game {
         if (this.stateAdventureGame() && this.states.topAlt == "PLAY") {
             if (this.adventureGame.lost) {
                 this.states.pop();
-                this.states.push("ADVENTUREGAME", "LOST", 4);
                 this.states.push("MAINMENU", "", 0);
+                this.states.push("ADVENTUREGAME", "LOST", 4);
+                XOR.Music.play(0);
             }
             else if (this.adventureGame.won) {
                 this.states.pop();
                 this.states.push("MAINMENU", "", 0);
                 this.states.push("ADVENTUREGAME", "WON", 4);
+                XOR.Music.play(1);
             }
             else if (this.adventureGame.timeForAction) {
-                this.states.push("ACTIONGAME", "INIT", 0);
+                this.states.push("ACTIONGAME", "PLAY", 0);
+                this.actionGame.start();
+                this.readySetGo();
             }
             else {
                 this.adventureGame.update();
@@ -5703,11 +6048,6 @@ class Game {
     }
     draw2doverlay() {
         let g = this.XOR.Graphics;
-        if (this.states.topName != "ADVENTUREGAME") {
-            g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
-            g.putTextAligned(this.states.topAlt, 'white', -1, -1, 0, 32);
-            g.putTextAligned("Time: " + Math.ceil(this.XOR.t1 - this.states.topTime), 'white', -1, -1, 0, 64);
-        }
         if (this.states.topName == "MAINMENU") {
             let font = g.context.font;
             g.context.font = "64px Salsbury,EssentialPragmataPro,sans-serif";
@@ -5730,20 +6070,35 @@ class Game {
             g.putTextAligned('SET!', 'yellow', 0, 0, 0, 0);
         }
         if (this.states.topAlt == "GO") {
-            g.putTextAligned('GO!!!', 'green', 0, 0, 0, 0);
+            g.putTextAligned('GO!!!', 'lime', 0, 0, 0, 0);
         }
         if (this.states.topName == "ACTIONGAME") {
             this.actionGame.draw2doverlay(g);
             if (this.states.topAlt == "WON") {
-                g.putTextAligned("YOU WON THIS ROUND!!!", 'red', 0, 0, 0, 0);
+                g.putTextAligned("YAY! YOU WON THIS ROUND!!!", 'red', 0, 0, 0, 0);
             }
             if (this.states.topAlt == "LOST") {
-                g.putTextAligned("YOU LOST THIS ROUND!!!", 'red', 0, 0, 0, 0);
+                g.putTextAligned("OH NO! YOU LOST!!!", 'red', 0, 0, 0, 0);
             }
         }
         if (this.states.topName == "ADVENTUREGAME") {
             this.adventureGame.draw2doverlay(g);
+            if (this.states.topAlt == "WON") {
+                g.putTextAligned("YAY! YOU WON THE GAME!!!", 'red', 0, 0, 0, 0);
+            }
+            if (this.states.topAlt == "LOST") {
+                g.putTextAligned("OH NO! YOU LOST!!!", 'red', 0, 0, 0, 0);
+            }
         }
+        // let debug = true;
+        // if (debug) {
+        //     g.putTextAligned(this.states.topName, 'white', -1, -1, 0, 0);
+        //     g.putTextAligned(this.states.topAlt, 'white', -1, -1, 0, 32);
+        //     g.putTextAligned("Time: " + Math.ceil(this.XOR.t1 - this.states.topTime), 'white', -1, -1, 0, 64);
+        //     for (let i = 0; i < 4; i++) {
+        //         g.putTextAligned("" + this.XOR.Music.getVolume(i).toFixed(2), "white", 0, 0, 0, i * 32);
+        //     }
+        // }
     }
     setInstructions() {
         let EIs = [

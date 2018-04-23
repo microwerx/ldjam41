@@ -42,6 +42,10 @@ namespace GTE {
         return Math.random() * (b - a + 1) + a;
     }
 
+    export function dice(sides: number): number {
+        return (Math.random() * sides + 1) | 0;
+    }
+
     export function rand01(): number {
         return Math.random();
     }

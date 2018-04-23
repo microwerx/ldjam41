@@ -33,11 +33,17 @@ class MusicComponent {
         this.musicElements = [];
         this.musicElements.push(document.createElement("audio"));
         this.musicElements.push(document.createElement("audio"));
-        this.musicElements[0].src = "assets/music/1hgj153.mp3";
-        this.musicElements[1].src = "assets/music/oceanwaves.mp3";
-        this.promises = [null, null];
+        this.musicElements.push(document.createElement("audio"));
+        this.musicElements.push(document.createElement("audio"));
+        this.musicElements[0].src = "assets/music/noise.mp3";
+        this.musicElements[1].src = "assets/music/maintheme.mp3";
+        this.musicElements[2].src = "assets/music/adventuretheme.mp3"
+        this.musicElements[3].src = "assets/music/arcadetheme.mp3";
+        this.promises = [null, null, null, null];
         this.musicElements[0].pause();
         this.musicElements[1].pause();
+        this.musicElements[2].pause();
+        this.musicElements[3].pause();
         this.currentPiece = -1;
         this.lastPiece = -1;
     }

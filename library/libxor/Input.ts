@@ -34,6 +34,9 @@ const KEY_LEFT = 14;
 const KEY_RIGHT = 15;
 const KEY_UP = 12;
 const KEY_DOWN = 13;
+const KEY_LEFTCLICK = 20;
+const KEY_MIDDLECLICK = 21;
+const KEY_RIGHTCLICK = 22;
 
 class InputComponent {
     buttons: number;
@@ -117,6 +120,10 @@ class InputComponent {
                 this.gamepadSelect = gp.buttons[8].value;
                 this.gamepadStart = gp.buttons[9].value;
             }
+            // if (this.gamepadStick1.x < -0.5) this.setkey(KEY_LEFT, true);
+            // if (this.gamepadStick1.x > 0.5) this.setkey(KEY_RIGHT, true);
+            // if (this.gamepadStick1.y < -0.5) this.setkey(KEY_UP, true);
+            // if (this.gamepadStick1.y > 0.5) this.setkey(KEY_DOWN, true);
             let gpinfo = document.getElementById("gamepaddebug");
             if (gpinfo) {
                 gpinfo.innerText = "gamepad connected";
@@ -129,16 +136,32 @@ class InputComponent {
         e.preventDefault();
         v.x = e.offsetX;
         v.y = e.offsetY;
+        this.setmousebutton(e.button, true);
     }
 
     onmouseup(e: MouseEvent, v: Vector3) {
         e.preventDefault();
         v.x = e.offsetX;
         v.y = e.offsetY;
+        this.setmousebutton(e.button, false);
     }
 
     clearkeys() {
         this.buttons = 0;
+    }
+
+    setmousebutton(which: number, state: boolean) {
+        switch (which) {
+            case 0:
+                this.setkey(KEY_LEFTCLICK, state);
+                break;
+            case 1:
+                this.setkey(KEY_MIDDLECLICK, state);
+                break;
+            case 2:
+                this.setkey(KEY_RIGHTCLICK, state);
+                break;
+        }
     }
 
     setkey(which: number, state: boolean) {

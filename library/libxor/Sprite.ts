@@ -103,8 +103,8 @@ class Sprite {
 
     static DirTo(sprite1: Sprite, sprite2: Sprite): Vector2 {
         if (!sprite1 || !sprite2) return Vector2.make(0, 0);
-        let dx = (sprite1.position.x + sprite1.offset.x) - (sprite2.position.x + sprite2.offset.x);
-        let dy = (sprite1.position.y + sprite1.offset.y) - (sprite2.position.y + sprite2.offset.y);
+        let dx = sprite1.x - sprite2.x;
+        let dy = sprite1.y - sprite2.y;
         return Vector2.make(-dx, -dy);
     }
 }
